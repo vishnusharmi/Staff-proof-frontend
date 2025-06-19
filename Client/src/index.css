@@ -1,3 +1,107 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    overflow-y: hidden;
+    box-sizing: border-box;
+}
+
+@theme {
+    --breakpoint-cb1: 930px;
+    --breakpoint-cb2: 1063px;
+    --breakpoint-fb1: 530px;
+}
+
+/* SCROLL BAR FOR ASIDE */
+
+.aside-scrollbar::-webkit-scrollbar {
+    width: 10px;
+}
+
+.aside-scrollbar::-webkit-scrollbar-track {
+    background: #c3d9f4;
+    /* Color of the scrollbar track */
+}
+
+.aside-scrollbar::-webkit-scrollbar-thumb {
+    background: #6a8db8;
+    /* Color of the scrollbar thumb */
+}
+
+.aside-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #2e75cc;
+    /* Color of the scrollbar thumb on hover */
+}
+
+/* SCROLL BAR FOR MAIN CONTENT */
+
+.content-scrollbar::-webkit-scrollbar {
+    width: 12px;
+}
+
+.content-scrollbar::-webkit-scrollbar-track {
+    background: #d3d3d3;
+    /* Color of the scrollbar track */
+}
+
+.content-scrollbar::-webkit-scrollbar-thumb {
+    background: #a9a9a9;
+    /* Color of the scrollbar thumb */
+}
+
+.content-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #808080;
+    /* Color of the scrollbar thumb on hover */
+}
+
+
+
+
+.sub-scrollbar {
+    overflow-y: auto;
+}
+
+.sub-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    /* display: none; Initially hidden */
+}
+
+.sub-scrollbar:hover::-webkit-scrollbar,
+.sub-scrollbar:active::-webkit-scrollbar {
+    display: block;
+    /* Visible on hover and while scrolling */
+}
+
+.sub-scrollbar::-webkit-scrollbar-track {
+    background: #ffffff;
+}
+
+.sub-scrollbar::-webkit-scrollbar-thumb {
+    background: #a9a9a9;
+    /* border-radius: 6px; */
+}
+
+.sub-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #808080;
+}
+
+.sub-scrollbar::-webkit-scrollbar-button:single-button {
+    background: #c0c0c0;
+    display: block;
+    height: 15px;
+}
+
+.sub-scrollbar::-webkit-scrollbar-button:single-button:vertical:decrement {
+    background: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23808080"><path d="M7 14l5-5 5 5z"/></svg>') no-repeat center;
+    background-size: 18px 18px;
+}
+
+.sub-scrollbar::-webkit-scrollbar-button:single-button:vertical:increment {
+    background: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23808080"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat center;
+    background-size: 18px 18px;
+}
