@@ -6,13 +6,18 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { NavLink } from "react-router-dom"; // ✅ use react-router-dom not "react-router"
 import { useState, useContext } from "react";
+import { UserContext } from "../context/UseContext";
 
 
 const SidebarItems = ({ toggleMenu, handleToggle }) => {
   const [isLogoutModal, setIsLogoutModal] = useState(false);
-//   const { logOut } = useContext(AuthContext); // ✅ logOut from context
+  const { user,login } = useContext(UserContext); // ✅ logOut from context
+ 
+  
 
-  const role = "verifier"; 
+  const role = user?.role; 
+  console.log(role);
+  
 
   const adminMenuItems = [
     {
@@ -50,11 +55,11 @@ const SidebarItems = ({ toggleMenu, handleToggle }) => {
       icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
       path: "/admin/billing",
     },
-    // {
-    //   name: "Disputes",
-    //   icon: <Person className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
-    //   path: "/admin/disputes",
-    // },
+    {
+      name: "Case Assign",
+      icon: <Person className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
+      path: "/admin/assign",
+    },
   ];
 
   const verifierMenuItems = [
@@ -94,12 +99,27 @@ const SidebarItems = ({ toggleMenu, handleToggle }) => {
     {
       name: "Dashboard",
       icon: <Dashboard className="w-5 h-5 text-teal-400 cb1:w-6 cb1:h-6" />,
-      path: "/employer/dashboard",
+      path: "/employer",
     },
     {
-      name: "Employees Cases",
+      name: "Employees",
       icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
-      path: "/employer/employees",
+      path: "/employer/search",
+    },
+    {
+      name: "Verifications",
+      icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
+      path: "/employer/verifications",
+    },
+    {
+      name: "Black List",
+      icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
+      path: "/employer/blacklist",
+    },
+    {
+      name: "Billings",
+      icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
+      path: "/employer/billings",
     },
   ];
 
@@ -125,7 +145,7 @@ const SidebarItems = ({ toggleMenu, handleToggle }) => {
 
   // Choose menu based on role
   const items =
-    role === "admin" ? adminMenuItems : role === "employer" ? employerMenuItems : role === "verifier" ? verifierMenuItems : employeeMenuItems;
+    role === "Admin" ? adminMenuItems : role === "Employer" ? employerMenuItems : role === "Verifier" ? verifierMenuItems : employeeMenuItems;
 
   return (
     <>

@@ -1318,12 +1318,15 @@
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import AllRoutes from "../src/components/ṛoutes/AllRoutes"; // adjust path if needed
+import { UserProvider } from "./components/context/UseContext";
 
 function App() {
   return (
-    <BrowserRouter>
-      <AllRoutes />
-    </BrowserRouter>
+    <UserProvider>
+      <BrowserRouter>
+        <AllRoutes />
+      </BrowserRouter>
+    </UserProvider>
   );
 }
 
