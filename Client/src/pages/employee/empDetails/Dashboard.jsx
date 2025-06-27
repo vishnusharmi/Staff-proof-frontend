@@ -1,10 +1,10 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
+import React, { useEffect, useState } from 'react';
+import { 
+  Grid, 
+  Card, 
+  CardContent, 
+  Typography, 
+  Button, 
   Chip,
   LinearProgress,
   Box,
@@ -16,8 +16,8 @@ import {
   Divider,
   Grow,
   Slide,
-  Fade,
-} from "@mui/material";
+  Fade
+} from '@mui/material';
 import {
   PersonAdd,
   Description,
@@ -28,49 +28,42 @@ import {
   Payment,
   CheckCircle,
   Warning,
-  Error,
-} from "@mui/icons-material";
-import { fetchDashboard, fetchProfile } from "../../../components/api/api";
-
-import { UserContext } from "../../../components/context/UseContext";
+  Error
+} from '@mui/icons-material';
+import { fetchDashboard, fetchProfile } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 // Teal color definitions
 const tealPalette = {
-  light: "#e0f2f1",
-  main: "#009688",
-  dark: "#00695c",
-  contrastText: "#ffffff",
+  light: '#e0f2f1',
+  main: '#009688',
+  dark: '#00695c',
+  contrastText: '#ffffff',
 };
 
 const StatCard = ({ title, value, icon, color }) => (
   <Grow in={true} timeout={800}>
-    <Card
-      sx={{
-        height: "100%",
-        transition: "transform 0.3s ease, box-shadow 0.3s ease",
-        "&:hover": {
-          transform: "translateY(-5px)",
-          boxShadow: "0px 6px 15px rgba(0, 150, 136, 0.2)",
-        },
-      }}
-    >
-      <CardContent
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          backgroundColor: tealPalette.light,
-          borderRadius: 2,
-        }}
-      >
-        <Avatar
-          sx={{
-            bgcolor: tealPalette.main,
-            color: "white",
-            width: 48,
-            height: 48,
-          }}
-        >
+    <Card sx={{ 
+      height: '100%', 
+      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+      '&:hover': {
+        transform: 'translateY(-5px)',
+        boxShadow: '0px 6px 15px rgba(0, 150, 136, 0.2)'
+      }
+    }}>
+      <CardContent sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2,
+        backgroundColor: tealPalette.light,
+        borderRadius: 2
+      }}>
+        <Avatar sx={{ 
+          bgcolor: tealPalette.main, 
+          color: 'white',
+          width: 48,
+          height: 48
+        }}>
           {React.cloneElement(icon, { sx: { fontSize: 28 } })}
         </Avatar>
         <Box>
@@ -86,16 +79,16 @@ const StatCard = ({ title, value, icon, color }) => (
   </Grow>
 );
 
-export default function EmpDashboard() {
+export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [profile, setProfile] = useState(null);
-  const { user } = useContext(UserContext);
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadData = async () => {
       const [dashboard, profile] = await Promise.all([
         fetchDashboard(),
-        fetchProfile(),
+        fetchProfile()
       ]);
       setDashboardData(dashboard);
       setProfile(profile);
@@ -106,64 +99,53 @@ export default function EmpDashboard() {
   if (!dashboardData || !profile) return <LinearProgress color="secondary" />;
 
   return (
-    <Box sx={{ p: 3, backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+    <Box sx={{ p: 3, backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       <Grid container spacing={3}>
         {/* Left Column */}
         <Grid item xs={12} md={8}>
           <Slide in={true} direction="right" timeout={500}>
-            <Card
-              sx={{
-                mb: 3,
-                borderRadius: 4,
-                boxShadow: "0px 4px 20px rgba(0, 150, 136, 0.1)",
-              }}
-            >
+            <Card sx={{ 
+              mb: 3, 
+              borderRadius: 4,
+              boxShadow: '0px 4px 20px rgba(0, 150, 136, 0.1)'
+            }}>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={2} mb={3}>
-                  <Avatar
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      bgcolor: tealPalette.main,
-                      fontSize: "2rem",
-                      fontWeight: "bold",
-                      boxShadow: "0px 4px 15px rgba(0, 150, 136, 0.3)",
-                    }}
-                  >
-                    {user?.name}
+                  <Avatar sx={{ 
+                    width: 56, 
+                    height: 56,
+                    bgcolor: tealPalette.main,
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0px 4px 15px rgba(0, 150, 136, 0.3)'
+                  }}>
+                    {user?.fullName?.[0]}
                   </Avatar>
                   <Box>
                     <Typography variant="h5" color={tealPalette.main}>
-                      Welcome
+                      Welcome, {user?.fullName}
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      StaffProof ID: Sp-123456
+                      StaffProof ID: {profile.staffProofId}
                     </Typography>
                   </Box>
                 </Box>
 
                 <Box mb={3}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    color={tealPalette.main}
-                  >
+                  <Typography variant="h6" gutterBottom color={tealPalette.main}>
                     Verification Status
                   </Typography>
                   <Chip
-                    label={profile.verificationStatus || "Pending"}
+                    label={profile.verificationStatus || 'Pending'}
                     color={
-                      profile.verificationStatus === "Verified"
-                        ? "success"
-                        : profile.verificationStatus === "Pending"
-                        ? "warning"
-                        : "error"
+                      profile.verificationStatus === 'Verified' ? 'success' :
+                      profile.verificationStatus === 'Pending' ? 'warning' : 'error'
                     }
                     icon={<CheckCircle fontSize="small" />}
-                    sx={{
+                    sx={{ 
                       px: 2,
-                      fontSize: "0.9rem",
-                      "& .MuiChip-icon": { color: "white !important" },
+                      fontSize: '0.9rem',
+                      '& .MuiChip-icon': { color: 'white !important' }
                     }}
                   />
                 </Box>
@@ -174,9 +156,9 @@ export default function EmpDashboard() {
                     startIcon={<Description />}
                     sx={{
                       bgcolor: tealPalette.main,
-                      "&:hover": { bgcolor: tealPalette.dark },
+                      '&:hover': { bgcolor: tealPalette.dark },
                       px: 3,
-                      borderRadius: 2,
+                      borderRadius: 2
                     }}
                   >
                     Upload Documents
@@ -188,7 +170,7 @@ export default function EmpDashboard() {
                       color: tealPalette.main,
                       px: 3,
                       borderRadius: 2,
-                      "&:hover": { bgcolor: tealPalette.light },
+                      '&:hover': { bgcolor: tealPalette.light }
                     }}
                     startIcon={<Work />}
                   >
@@ -200,20 +182,18 @@ export default function EmpDashboard() {
                     startIcon={<Payment />}
                     sx={{
                       px: 3,
-                      borderRadius: 2,
+                      borderRadius: 2
                     }}
                   >
                     Buy Add-ons
                   </Button>
                 </Box>
 
-                <Divider
-                  sx={{
-                    my: 3,
-                    borderColor: tealPalette.light,
-                    borderWidth: 1,
-                  }}
-                />
+                <Divider sx={{ 
+                  my: 3, 
+                  borderColor: tealPalette.light,
+                  borderWidth: 1 
+                }} />
 
                 <Grid container spacing={3}>
                   <Grid item xs={12} sm={6} lg={4}>
@@ -250,14 +230,14 @@ export default function EmpDashboard() {
                 </Typography>
                 <List dense>
                   {dashboardData.recentActivities?.map((activity) => (
-                    <ListItem
+                    <ListItem 
                       key={activity.id}
                       sx={{
-                        transition: "all 0.3s ease",
-                        "&:hover": {
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
                           bgcolor: tealPalette.light,
-                          transform: "translateX(5px)",
-                        },
+                          transform: 'translateX(5px)'
+                        }
                       }}
                     >
                       <ListItemIcon>
@@ -266,8 +246,8 @@ export default function EmpDashboard() {
                       <ListItemText
                         primary={activity.message}
                         secondary={activity.date}
-                        primaryTypographyProps={{ color: "textPrimary" }}
-                        secondaryTypographyProps={{ color: "textSecondary" }}
+                        primaryTypographyProps={{ color: 'textPrimary' }}
+                        secondaryTypographyProps={{ color: 'textSecondary' }}
                       />
                     </ListItem>
                   ))}
@@ -280,13 +260,11 @@ export default function EmpDashboard() {
         {/* Right Column */}
         <Grid item xs={12} md={4}>
           <Slide in={true} direction="left" timeout={700}>
-            <Card
-              sx={{
-                mb: 3,
-                borderRadius: 4,
-                bgcolor: tealPalette.light,
-              }}
-            >
+            <Card sx={{ 
+              mb: 3, 
+              borderRadius: 4,
+              bgcolor: tealPalette.light
+            }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom color={tealPalette.dark}>
                   Security Status
@@ -294,7 +272,7 @@ export default function EmpDashboard() {
                 <Box display="flex" alignItems="center" gap={2}>
                   <Security sx={{ color: tealPalette.dark, fontSize: 32 }} />
                   <Typography variant="body1" color={tealPalette.dark}>
-                    {profile.securityLevel || "Basic Security"}
+                    {profile.securityLevel || 'Basic Security'}
                   </Typography>
                 </Box>
               </CardContent>
@@ -309,18 +287,16 @@ export default function EmpDashboard() {
                 </Typography>
                 <List dense>
                   {dashboardData.notifications?.map((alert) => (
-                    <ListItem
+                    <ListItem 
                       key={alert.id}
                       sx={{
-                        borderLeft: `4px solid ${
-                          alert.type === "warning" ? "#ff9800" : "#f44336"
-                        }`,
+                        borderLeft: `4px solid ${alert.type === 'warning' ? '#ff9800' : '#f44336'}`,
                         mb: 1,
-                        transition: "all 0.3s ease",
+                        transition: 'all 0.3s ease'
                       }}
                     >
                       <ListItemIcon>
-                        {alert.type === "warning" ? (
+                        {alert.type === 'warning' ? (
                           <Warning color="warning" />
                         ) : (
                           <Error color="error" />
@@ -329,8 +305,8 @@ export default function EmpDashboard() {
                       <ListItemText
                         primary={alert.message}
                         secondary={alert.date}
-                        primaryTypographyProps={{ color: "textPrimary" }}
-                        secondaryTypographyProps={{ color: "textSecondary" }}
+                        primaryTypographyProps={{ color: 'textPrimary' }}
+                        secondaryTypographyProps={{ color: 'textSecondary' }}
                       />
                     </ListItem>
                   ))}

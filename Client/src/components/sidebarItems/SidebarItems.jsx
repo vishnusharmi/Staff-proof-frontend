@@ -1,12 +1,13 @@
 
 
-import { Block, Dashboard, LockClock, Person } from "@mui/icons-material";
+import { AssignmentInd, Block, Dashboard, FolderShared, LockClock, Notifications, Person, ReceiptLong, RequestPage, Workspaces } from "@mui/icons-material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import BadgeIcon from "@mui/icons-material/Badge";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { NavLink } from "react-router-dom"; // ✅ use react-router-dom not "react-router"
 import { useState, useContext } from "react";
 import { UserContext } from "../context/UseContext";
+import { Settings } from "lucide-react";
 
 
 const SidebarItems = ({ toggleMenu, handleToggle }) => {
@@ -127,19 +128,47 @@ const SidebarItems = ({ toggleMenu, handleToggle }) => {
     {
       name: "Dashboard",
       icon: <Dashboard className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
-      path: "/employee/dashboard",
+      path: "/employee",
     },
     {
-      name: "Search",
-      icon: <Person className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
-      path: "/employee/search",
+      name: "Profile",
+      icon: <AssignmentInd className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/profile",
     },
     {
-      name: "Attendance",
-      icon: (
-        <DescriptionIcon className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />
-      ),
-      path: "/employee/attendance",
+      name: "Job History",
+      icon: <Workspaces className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/job-history",
+    },
+    {
+      name: "Documents",
+      icon: <FolderShared className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/documents",
+    },
+    {
+      name: "Permissions",
+      icon: <RequestPage className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/permissions",
+    },
+    {
+      name: "Add-Ons",
+      icon: <Workspaces className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/add-ons",
+    },
+    {
+      name: "Billing",
+      icon: <ReceiptLong className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/billing",
+    },
+    {
+      name: "Notifications",
+      icon: <Notifications className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/notifications",
+    },
+    {
+      name: "Settings",
+      icon: <Settings className="w-5 h-5 text-teal-500 cb1:w-6 cb1:h-6" />,
+      path: "/employee/settings",
     },
   ];
 
