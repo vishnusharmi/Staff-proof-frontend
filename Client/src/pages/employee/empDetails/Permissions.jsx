@@ -20,7 +20,9 @@ import {
   Box,
   Snackbar,
   Alert,
-  TablePagination
+  TablePagination,
+  Menu,
+  MenuItem
 } from '@mui/material';
 import {
   Visibility,
@@ -29,7 +31,8 @@ import {
   Email,
   History,
   Delete,
-  Warning
+  Warning,
+  MoreVert
 } from '@mui/icons-material';
 import {
   fetchAccessRequests,
@@ -52,6 +55,8 @@ export default function Permissions() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [dropdownAnchor, setDropdownAnchor] = useState(null);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -105,6 +110,23 @@ export default function Permissions() {
 
   const getStatusConfig = (status) => 
     statusConfig[status] || statusConfig.default;
+
+  const handleDropdownOpen = (event, requestId) => {
+    setDropdownAnchor(event.currentTarget);
+    setSelectedRequestId(requestId);
+  };
+
+  const handleDropdownClose = () => {
+    setDropdownAnchor(null);
+    setSelectedRequestId(null);
+  };
+
+  const handleActionClick = (action) => {
+    if (selectedRequestId) {
+      handleRequestAction(selectedRequestId, action);
+    }
+    handleDropdownClose();
+  };
 
   // Calculate paginated requests
   const paginatedRequests = requests.slice(
@@ -208,35 +230,14 @@ export default function Permissions() {
                   />
                 </TableCell>
                 <TableCell align="right">
-                  {request.status === 'pending' ? (
-                    <>
-                      <Tooltip title="Accept Request">
-                        <IconButton
-                          onClick={() => handleRequestAction(request.id, 'accepted')}
-                          sx={{ color: '#009688', '&:hover': { bgcolor: '#b2dfdb' } }}
-                        >
-                          <CheckCircle />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Deny Request">
-                        <IconButton
-                          onClick={() => handleRequestAction(request.id, 'denied')}
-                          sx={{ color: '#e53935', '&:hover': { bgcolor: '#ffebee' } }}
-                        >
-                          <Cancel />
-                        </IconButton>
-                      </Tooltip>
-                    </>
-                  ) : (
-                    <Tooltip title="Delete Record">
-                      <IconButton
-                        onClick={() => handleRequestAction(request.id, 'delete')}
-                        sx={{ color: '#e53935', '&:hover': { bgcolor: '#ffebee' } }}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </Tooltip>
-                  )}
+                  <Tooltip title="Actions">
+                    <IconButton
+                      onClick={(event) => handleDropdownOpen(event, request.id)}
+                      sx={{ color: '#009688', '&:hover': { bgcolor: '#b2dfdb' } }}
+                    >
+                      <MoreVert />
+                    </IconButton>
+                  </Tooltip>
                   <Tooltip title="View Details">
                     <IconButton 
                       onClick={() => setSelectedRequest(request)}
@@ -266,6 +267,48 @@ export default function Permissions() {
           '& .MuiTablePagination-displayedRows': { color: '#00695c' }
         }}
       />
+
+      {/* Actions Dropdown Menu */}
+      <Menu
+        anchorEl={dropdownAnchor}
+        open={Boolean(dropdownAnchor)}
+        onClose={handleDropdownClose}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0px 8px 24px rgba(0, 150, 136, 0.15)',
+            '& .MuiMenuItem-root': {
+              color: '#00695c',
+              '&:hover': { bgcolor: '#e0f2f1' }
+            }
+          }
+        }}
+      >
+        {selectedRequestId && (() => {
+          const request = requests.find(req => req.id === selectedRequestId);
+          if (request?.status === 'pending') {
+            return (
+              <>
+                <MenuItem onClick={() => handleActionClick('accepted')}>
+                  <CheckCircle sx={{ mr: 1, color: '#009688' }} />
+                  Accept Request
+                </MenuItem>
+                <MenuItem onClick={() => handleActionClick('denied')}>
+                  <Cancel sx={{ mr: 1, color: '#e53935' }} />
+                  Deny Request
+                </MenuItem>
+              </>
+            );
+          } else {
+            return (
+              <MenuItem onClick={() => handleActionClick('delete')}>
+                <Delete sx={{ mr: 1, color: '#e53935' }} />
+                Delete Record
+              </MenuItem>
+            );
+          }
+        })()}
+      </Menu>
 
       {requests.length === 0 && !loading && !error && (
         <Typography variant="body1" sx={{ p: 3, textAlign: 'center', color: '#00695c' }}>

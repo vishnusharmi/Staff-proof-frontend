@@ -9,7 +9,11 @@ import {
   Calendar,
   FileText,
   Clock,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import BadgeLogo  from "../../../assets/images badge.jpg";
+import { Link } from "react-router-dom";
 
 export default function SubscriptionBilling() {
   // State for subscription data
@@ -21,8 +25,8 @@ export default function SubscriptionBilling() {
     autoRenew: true,
   });
 
-  // State for invoice data
-  const [invoices, setInvoices] = useState([
+  // Extended invoice data for pagination demo
+  const [allInvoices] = useState([
     {
       id: "INV-2025-04-29",
       date: "Apr 29, 2025",
@@ -47,7 +51,67 @@ export default function SubscriptionBilling() {
       status: "Paid",
       downloadUrl: "#",
     },
+    {
+      id: "INV-2024-01-29",
+      date: "Jan 29, 2024",
+      plan: "Basic Plan",
+      amount: "₹9,999",
+      status: "Paid",
+      downloadUrl: "#",
+    },
+    {
+      id: "INV-2023-10-29",
+      date: "Oct 29, 2023",
+      plan: "Basic Plan",
+      amount: "₹9,999",
+      status: "Paid",
+      downloadUrl: "#",
+    },
+    {
+      id: "INV-2023-07-29",
+      date: "Jul 29, 2023",
+      plan: "Basic Plan",
+      amount: "₹9,999",
+      status: "Paid",
+      downloadUrl: "#",
+    },
+    {
+      id: "INV-2023-04-29",
+      date: "Apr 29, 2023",
+      plan: "Basic Plan",
+      amount: "₹9,999",
+      status: "Paid",
+      downloadUrl: "#",
+    },
+    {
+      id: "INV-2023-01-29",
+      date: "Jan 29, 2023",
+      plan: "Basic Plan",
+      amount: "₹9,999",
+      status: "Paid",
+      downloadUrl: "#",
+    },
+    {
+      id: "INV-2022-10-29",
+      date: "Oct 29, 2022",
+      plan: "Basic Plan",
+      amount: "₹9,999",
+      status: "Paid",
+      downloadUrl: "#",
+    },
+    {
+      id: "INV-2022-07-29",
+      date: "Jul 29, 2022",
+      plan: "Basic Plan",
+      amount: "₹9,999",
+      status: "Paid",
+      downloadUrl: "#",
+    },
   ]);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   // Plan details
   const plans = {
@@ -82,7 +146,72 @@ export default function SubscriptionBilling() {
         "SLA guarantees",
         "White-label options",
       ],
+      badge:BadgeLogo
     },
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(allInvoices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentInvoices = allInvoices.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    setCurrentPage(page);
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push("...");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
   };
 
   // Get days remaining until subscription expiry
@@ -270,6 +399,16 @@ export default function SubscriptionBilling() {
                             </div>
                           </div>
                           <div className="text-right">
+                            {plan.price === "₹49,999" ? (
+                              <img
+                                src={plan.badge}
+                                alt="badge"
+                                className="w-10 h-10"
+                              />
+                            ) : (
+                              ""
+                            )}
+
                             <div className="font-bold text-gray-800">
                               {plan.price}
                             </div>
@@ -283,11 +422,12 @@ export default function SubscriptionBilling() {
                       </div>
                     );
                   })}
-
-                  <button className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center mt-4">
-                    Compare Plans
-                    <ArrowRight size={16} className="ml-2" />
-                  </button>
+                  <Link to="/employer/plans">
+                    <button className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center mt-4">
+                      Compare Plans
+                      <ArrowRight size={16} className="ml-2" />
+                    </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -301,6 +441,19 @@ export default function SubscriptionBilling() {
               <FileText className="mr-2" size={20} />
               Payment History
             </h2>
+            <div className="flex items-center gap-4">
+              <select
+                value={itemsPerPage}
+                onChange={(e) =>
+                  handleItemsPerPageChange(Number(e.target.value))
+                }
+                className="bg-white border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value={5}>5 per page</option>
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+              </select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -325,7 +478,7 @@ export default function SubscriptionBilling() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {invoices.map((invoice) => (
+                {currentInvoices.map((invoice) => (
                   <tr
                     key={invoice.id}
                     className="hover:bg-gray-50 transition-colors duration-150"
@@ -359,24 +512,59 @@ export default function SubscriptionBilling() {
             </table>
           </div>
 
-          {invoices.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500">No payment history available.</p>
-            </div>
-          ) : (
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing {invoices.length} entries
-                </div>
-                <div className="flex items-center">
-                  <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    View All Invoices
+          {/* Pagination Controls */}
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {startIndex + 1} to{" "}
+                {Math.min(endIndex, allInvoices.length)} of {allInvoices.length}{" "}
+                entries
+              </div>
+
+              {allInvoices.length > itemsPerPage && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className="flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={16} className="mr-1" />
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {getPageNumbers().map((page, index) => (
+                      <div key={index}>
+                        {page === "..." ? (
+                          <span className="px-3 py-1 text-gray-500">...</span>
+                        ) : (
+                          <button
+                            onClick={() => goToPage(page)}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                              currentPage === page
+                                ? "bg-indigo-600 text-white"
+                                : "text-gray-700 hover:bg-gray-100"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                    <ChevronRight size={16} className="ml-1" />
                   </button>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Contact Support */}

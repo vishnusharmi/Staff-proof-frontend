@@ -8,9 +8,24 @@ import {
   ListItemAvatar,
   ListItemText,
   Box,
-  useTheme,
+  Pagination,
+  Chip,
+  IconButton,
+  Tooltip,
+  Avatar,
 } from "@mui/material";
-import { Users, CreditCard, FileCheck, AlertTriangle } from "lucide-react";
+import {
+  Users,
+  CreditCard,
+  FileCheck,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  MoreVertical,
+  RefreshCw,
+  Filter,
+  Search,
+} from "lucide-react";
 import { keyframes } from "@emotion/react";
 
 const pulse = keyframes`
@@ -31,13 +46,216 @@ const tealColors = {
   900: "#004d40",
 };
 
+// Mock data for activities with pagination
+const mockActivities = [
+  {
+    id: 1,
+    type: "registration",
+    user: "Rahul Sharma",
+    userType: "Employee",
+    time: "2 minutes ago",
+    status: "success",
+  },
+  {
+    id: 2,
+    type: "payment",
+    user: "TechCorp Solutions",
+    userType: "Employer",
+    amount: "₹12,000",
+    time: "15 minutes ago",
+    status: "success",
+  },
+  {
+    id: 3,
+    type: "verification",
+    user: "Priya Patel",
+    userType: "Employee",
+    time: "45 minutes ago",
+    status: "success",
+  },
+  {
+    id: 4,
+    type: "flag",
+    user: "Divya Mehta",
+    userType: "Employee",
+    reason: "Document discrepancy",
+    time: "1 hour ago",
+    status: "warning",
+  },
+  {
+    id: 5,
+    type: "registration",
+    user: "GlobalServe Inc.",
+    userType: "Employer",
+    time: "3 hours ago",
+    status: "success",
+  },
+  {
+    id: 6,
+    type: "payment",
+    user: "InnovateTech",
+    userType: "Employer",
+    amount: "₹8,500",
+    time: "4 hours ago",
+    status: "success",
+  },
+  {
+    id: 7,
+    type: "verification",
+    user: "Amit Kumar",
+    userType: "Employee",
+    time: "5 hours ago",
+    status: "success",
+  },
+  {
+    id: 8,
+    type: "flag",
+    user: "Sneha Reddy",
+    userType: "Employee",
+    reason: "Background check failed",
+    time: "6 hours ago",
+    status: "error",
+  },
+  {
+    id: 9,
+    type: "registration",
+    user: "FutureWorks",
+    userType: "Employer",
+    time: "8 hours ago",
+    status: "success",
+  },
+  {
+    id: 10,
+    type: "payment",
+    user: "VisionCorp",
+    userType: "Employer",
+    amount: "₹15,000",
+    time: "10 hours ago",
+    status: "success",
+  },
+];
+
 const AdminDashBoard = () => {
   const [loaded, setLoaded] = useState(false);
-  const theme = useTheme();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const itemsPerPage = 5;
 
   useEffect(() => {
     setLoaded(true);
   }, []);
+
+  // Filter activities based on search and filter
+  const filteredActivities = mockActivities.filter((activity) => {
+    const matchesSearch = activity.user.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterType === "all" || activity.type === filterType;
+    return matchesSearch && matchesFilter;
+  });
+
+  // Paginate activities
+  const paginatedActivities = filteredActivities.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(filteredActivities.length / itemsPerPage);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "success":
+        return "#10b981";
+      case "warning":
+        return "#f59e0b";
+      case "error":
+        return "#ef4444";
+      default:
+        return "#6b7280";
+    }
+  };
+
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case "registration":
+        return <Users size={20} />;
+      case "payment":
+        return <CreditCard size={20} />;
+      case "verification":
+        return <FileCheck size={20} />;
+      case "flag":
+        return <AlertTriangle size={20} />;
+      default:
+        return <Users size={20} />;
+    }
+  };
+
+  const stats = [
+    { 
+      title: "Total Employers", 
+      value: 245, 
+      icon: <Users />, 
+      trend: "+12%",
+      trendDirection: "up",
+      color: tealColors[500]
+    },
+    { 
+      title: "Total Employees", 
+      value: 1568, 
+      icon: <Users />, 
+      trend: "+8%",
+      trendDirection: "up",
+      color: tealColors[600]
+    },
+    {
+      title: "Verifications Pending",
+      value: 42,
+      icon: <AlertTriangle />,
+      trend: "-5%",
+      trendDirection: "down",
+      color: "#f59e0b"
+    },
+    {
+      title: "Verifications Completed",
+      value: 1235,
+      icon: <FileCheck />,
+      trend: "+15%",
+      trendDirection: "up",
+      color: "#10b981"
+    },
+    {
+      title: "Employee Revenue",
+      value: "₹156,800",
+      icon: <CreditCard />,
+      trend: "+18%",
+      trendDirection: "up",
+      color: "#8b5cf6"
+    },
+    {
+      title: "Employer Revenue",
+      value: "₹245,000",
+      icon: <CreditCard />,
+      trend: "+22%",
+      trendDirection: "up",
+      color: "#06b6d4"
+    },
+    {
+      title: "Blacklisted Employees",
+      value: 23,
+      icon: <AlertTriangle />,
+      trend: "-2%",
+      trendDirection: "down",
+      color: "#ef4444"
+    },
+    {
+      title: "Total Revenue",
+      value: "₹401,800",
+      icon: <CreditCard />,
+      trend: "+20%",
+      trendDirection: "up",
+      color: "#059669",
+      highlight: true
+    },
+  ];
 
   return (
     <Box
@@ -47,66 +265,53 @@ const AdminDashBoard = () => {
         background: `linear-gradient(135deg, ${tealColors[50]} 0%, ${tealColors[100]} 100%)`,
       }}
     >
-      <Typography
-        variant="h4"
-        sx={{
-          mb: 4,
-          color: tealColors[900],
-          fontWeight: 800,
-          letterSpacing: "-0.5px",
-          textShadow: "2px 2px 4px rgba(0, 0, 0, 0.1)",
-          position: "relative",
-          "&:after": {
-            content: '""',
-            position: "absolute",
-            bottom: -8,
-            left: 0,
-            width: "80px",
-            height: "4px",
-            background: `linear-gradient(90deg, ${tealColors[500]}, ${tealColors[300]})`,
-            borderRadius: "2px",
-          },
-        }}
-      >
-        Dashboard Overview
-      </Typography>
+      {/* Header Section */}
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              color: tealColors[900],
+              fontWeight: 800,
+              letterSpacing: "-0.5px",
+              textShadow: "2px 2px 4px rgba(0, 0, 0, 0.1)",
+              position: "relative",
+              "&:after": {
+                content: '""',
+                position: "absolute",
+                bottom: -8,
+                left: 0,
+                width: "80px",
+                height: "4px",
+                background: `linear-gradient(90deg, ${tealColors[500]}, ${tealColors[300]})`,
+                borderRadius: "2px",
+              },
+            }}
+          >
+            Dashboard Overview
+          </Typography>
+          <Typography variant="body2" sx={{ color: tealColors[700], mt: 1 }}>
+            Welcome back! Here's what's happening with your platform today.
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title="Refresh Data">
+            <IconButton sx={{ bgcolor: 'white', boxShadow: 2 }}>
+              <RefreshCw size={20} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Filter Options">
+            <IconButton sx={{ bgcolor: 'white', boxShadow: 2 }}>
+              <Filter size={20} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
 
+      {/* Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {[
-          { title: "Total Employers", value: 245, icon: <Users /> },
-          { title: "Total Employees", value: 1568, icon: <Users /> },
-          {
-            title: "Verifications Pending",
-            value: 42,
-            icon: <AlertTriangle />,
-          },
-          {
-            title: "Verifications Completed",
-            value: 1235,
-            icon: <FileCheck />,
-          },
-          {
-            title: "Employee Revenue",
-            value: "₹156,800",
-            icon: <CreditCard />,
-          },
-          {
-            title: "Employer Revenue",
-            value: "₹245,000",
-            icon: <CreditCard />,
-          },
-          {
-            title: "Blacklisted Employees",
-            value: 23,
-            icon: <AlertTriangle />,
-          },
-          {
-            title: "Total Revenue",
-            value: "₹401,800",
-            icon: <CreditCard />,
-            highlight: true,
-          },
-        ].map((stat, index) => (
+        {stats.map((stat, index) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
             <Paper
               elevation={loaded ? 3 : 0}
@@ -144,24 +349,39 @@ const AdminDashBoard = () => {
                   position: "absolute",
                   top: 16,
                   right: 16,
-                  color: tealColors[600],
+                  color: stat.color,
                   opacity: 0.2,
                   transform: "scale(1.8)",
                 }}
               >
                 {stat.icon}
               </Box>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  color: tealColors[700],
-                  mb: 1,
-                  fontWeight: 600,
-                  letterSpacing: "0.3px",
-                }}
-              >
-                {stat.title}
-              </Typography>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: tealColors[700],
+                    fontWeight: 600,
+                    letterSpacing: "0.3px",
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {stat.title}
+                </Typography>
+                <Chip
+                  label={stat.trend}
+                  size="small"
+                  icon={stat.trendDirection === "up" ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  sx={{
+                    bgcolor: stat.trendDirection === "up" ? '#dcfce7' : '#fef3c7',
+                    color: stat.trendDirection === "up" ? '#166534' : '#92400e',
+                    fontSize: '0.75rem',
+                    height: '20px',
+                  }}
+                />
+              </Box>
+              
               <Typography
                 variant="h4"
                 sx={{
@@ -179,6 +399,7 @@ const AdminDashBoard = () => {
         ))}
       </Grid>
 
+      {/* Activity Section with Search and Filter */}
       <Paper
         elevation={loaded ? 6 : 0}
         sx={{
@@ -191,82 +412,97 @@ const AdminDashBoard = () => {
           opacity: loaded ? 1 : 0,
           transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
           transitionDelay: "300ms",
-          "&:before": {
-            content: '""',
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: `linear-gradient(135deg, ${tealColors[100]} 0%, transparent 60%)`,
-            opacity: 0.15,
-          },
         }}
       >
-        <Typography
-          variant="h5"
+        {/* Header with Search and Filter */}
+        <Box
           sx={{
             p: 3,
-            color: tealColors[900],
-            fontWeight: 700,
             background: `linear-gradient(90deg, ${tealColors[50]}, ${tealColors[100]})`,
             borderBottom: `1px solid ${tealColors[100]}`,
             display: "flex",
             alignItems: "center",
-            "&:before": {
-              content: '""',
-              display: "inline-block",
-              width: "8px",
-              height: "24px",
-              background: tealColors[500],
-              borderRadius: "4px",
-              marginRight: "12px",
-            },
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
           }}
         >
-          Recent Activity
-        </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                color: tealColors[900],
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                "&:before": {
+                  content: '""',
+                  display: "inline-block",
+                  width: "8px",
+                  height: "24px",
+                  background: tealColors[500],
+                  borderRadius: "4px",
+                  marginRight: "12px",
+                },
+              }}
+            >
+              Recent Activity
+            </Typography>
+            <Chip 
+              label={`${filteredActivities.length} activities`} 
+              size="small" 
+              sx={{ bgcolor: tealColors[100], color: tealColors[700] }}
+            />
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: tealColors[600] }} />
+              <input
+                type="text"
+                placeholder="Search activities..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding: '8px 12px 8px 36px',
+                  border: `1px solid ${tealColors[200]}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  width: '200px',
+                  outline: 'none',
+                  '&:focus': {
+                    borderColor: tealColors[500],
+                    boxShadow: `0 0 0 2px ${tealColors[100]}`,
+                  }
+                }}
+              />
+            </Box>
+            
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                border: `1px solid ${tealColors[200]}`,
+                borderRadius: '8px',
+                fontSize: '14px',
+                outline: 'none',
+                background: 'white',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="all">All Activities</option>
+              <option value="registration">Registrations</option>
+              <option value="payment">Payments</option>
+              <option value="verification">Verifications</option>
+              <option value="flag">Flags</option>
+            </select>
+          </Box>
+        </Box>
 
+        {/* Activity List */}
         <List disablePadding>
-          {[
-            {
-              id: 1,
-              type: "registration",
-              user: "Rahul Sharma",
-              userType: "Employee",
-              time: "2 minutes ago",
-            },
-            {
-              id: 2,
-              type: "payment",
-              user: "TechCorp Solutions",
-              userType: "Employer",
-              amount: "₹12,000",
-              time: "15 minutes ago",
-            },
-            {
-              id: 3,
-              type: "verification",
-              user: "Priya Patel",
-              userType: "Employee",
-              time: "45 minutes ago",
-            },
-            {
-              id: 4,
-              type: "flag",
-              user: "Divya Mehta",
-              userType: "Employee",
-              reason: "Document discrepancy",
-              time: "1 hour ago",
-            },
-            {
-              id: 5,
-              type: "registration",
-              user: "GlobalServe Inc.",
-              userType: "Employer",
-              time: "3 hours ago",
-            },
-          ].map((activity, index) => (
+          {paginatedActivities.map((activity, index) => (
             <ListItem
               key={activity.id}
               sx={{
@@ -292,7 +528,7 @@ const AdminDashBoard = () => {
                   top: 0,
                   height: "100%",
                   width: "4px",
-                  background: tealColors[500],
+                  background: getStatusColor(activity.status),
                   transform: "scaleY(0)",
                   transformOrigin: "top",
                   transition: "transform 0.4s ease",
@@ -312,24 +548,18 @@ const AdminDashBoard = () => {
                   justifyContent: "center",
                 }}
               >
-                <Box
+                <Avatar
                   sx={{
                     width: 40,
                     height: 40,
-                    borderRadius: "50%",
                     background: tealColors[100],
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
                     color: tealColors[700],
                   }}
                 >
-                  {activity.type === "registration" && <Users />}
-                  {activity.type === "payment" && <CreditCard />}
-                  {activity.type === "verification" && <FileCheck />}
-                  {activity.type === "flag" && <AlertTriangle />}
-                </Box>
+                  {getActivityIcon(activity.type)}
+                </Avatar>
               </ListItemAvatar>
+              
               <ListItemText
                 primary={
                   <Typography
@@ -339,24 +569,21 @@ const AdminDashBoard = () => {
                       color: tealColors[900],
                       display: "flex",
                       flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: 1,
                     }}
                   >
                     {activity.user}
-                    <Typography
-                      component="span"
-                      variant="body2"
+                    <Chip
+                      label={activity.userType}
+                      size="small"
                       sx={{
-                        color: tealColors[600],
-                        ml: 1.5,
-                        fontWeight: 500,
-                        background: tealColors[100],
-                        px: 1.2,
-                        py: 0.2,
-                        borderRadius: "4px",
+                        bgcolor: tealColors[100],
+                        color: tealColors[700],
+                        fontSize: '0.75rem',
+                        height: '20px',
                       }}
-                    >
-                      {activity.userType}
-                    </Typography>
+                    />
                   </Typography>
                 }
                 secondary={
@@ -375,7 +602,7 @@ const AdminDashBoard = () => {
                         width: "8px",
                         height: "8px",
                         borderRadius: "50%",
-                        background: tealColors[500],
+                        background: getStatusColor(activity.status),
                         mr: 1.2,
                         flexShrink: 0,
                       }}
@@ -390,21 +617,61 @@ const AdminDashBoard = () => {
                   </Typography>
                 }
               />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: tealColors[600],
-                  whiteSpace: "nowrap",
-                  fontWeight: 500,
-                  minWidth: "max-content",
-                  ml: 2,
-                }}
-              >
-                {activity.time}
-              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: tealColors[600],
+                    whiteSpace: "nowrap",
+                    fontWeight: 500,
+                    minWidth: "max-content",
+                  }}
+                >
+                  {activity.time}
+                </Typography>
+                <IconButton size="small">
+                  <MoreVertical size={16} />
+                </IconButton>
+              </Box>
             </ListItem>
           ))}
         </List>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box
+            sx={{
+              p: 3,
+              display: "flex",
+              justifyContent: "center",
+              borderTop: `1px solid ${tealColors[100]}`,
+              background: tealColors[50],
+            }}
+          >
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={(event, value) => setCurrentPage(value)}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+              sx={{
+                '& .MuiPaginationItem-root': {
+                  color: tealColors[700],
+                  '&.Mui-selected': {
+                    bgcolor: tealColors[500],
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: tealColors[600],
+                    },
+                  },
+                },
+              }}
+            />
+          </Box>
+        )}
       </Paper>
     </Box>
   );

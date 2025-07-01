@@ -18,14 +18,16 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  TablePagination
+  TablePagination,
+  Grid
 } from '@mui/material';
 import { 
   Description, 
   CheckCircle, 
   Error, 
   PendingActions, 
-  Delete
+  Delete,
+  Visibility
 } from '@mui/icons-material';
 
 // Mock API functions - replace with real API calls
@@ -56,6 +58,16 @@ const deleteDocument = (docId) => {
   return Promise.resolve({ success: true });
 };
 
+// Mock function to fetch document content - replace with real API call
+const fetchDocumentContent = (docId) => {
+  return Promise.resolve({
+    id: docId,
+    content: 'This is a sample document content. In a real application, this would be the actual document content or a URL to view the document.',
+    url: 'https://example.com/document.pdf',
+    type: 'pdf'
+  });
+};
+
 const statusConfig = {
   Verified: { color: 'success', icon: <CheckCircle /> },
   Pending: { color: 'warning', icon: <PendingActions /> },
@@ -67,6 +79,7 @@ export default function DocumentCenter() {
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, docId: null, docName: '' });
+  const [viewDialog, setViewDialog] = useState({ open: false, doc: null, content: null, loading: false });
   
   // Pagination state
   const [page, setPage] = useState(0);
@@ -108,6 +121,27 @@ export default function DocumentCenter() {
       docId: doc.id,
       docName: doc.name
     });
+  };
+
+  const handleViewClick = async (doc) => {
+    setViewDialog({ open: true, doc, content: null, loading: true });
+    
+    try {
+      const content = await fetchDocumentContent(doc.id);
+      setViewDialog(prev => ({ ...prev, content, loading: false }));
+    } catch (error) {
+      console.error('Error loading document content:', error);
+      setSnackbar({ 
+        open: true, 
+        message: 'Failed to load document content', 
+        severity: 'error' 
+      });
+      setViewDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleViewClose = () => {
+    setViewDialog({ open: false, doc: null, content: null, loading: false });
   };
 
   const handleDeleteConfirm = async () => {
@@ -320,20 +354,36 @@ export default function DocumentCenter() {
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton 
-                      size="small"
-                      onClick={() => handleDeleteClick(doc)}
-                      sx={{ 
-                        color: '#f44336', 
-                        '&:hover': { 
-                          bgcolor: '#ffebee',
-                          transform: 'scale(1.1)'
-                        },
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                      <IconButton 
+                        size="small"
+                        onClick={() => handleViewClick(doc)}
+                        sx={{ 
+                          color: '#009688', 
+                          '&:hover': { 
+                            bgcolor: '#e0f2f1',
+                            transform: 'scale(1.1)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <Visibility fontSize="small" />
+                      </IconButton>
+                      <IconButton 
+                        size="small"
+                        onClick={() => handleDeleteClick(doc)}
+                        sx={{ 
+                          color: '#f44336', 
+                          '&:hover': { 
+                            bgcolor: '#ffebee',
+                            transform: 'scale(1.1)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 </TableRow>
               )) : (
@@ -440,6 +490,169 @@ export default function DocumentCenter() {
             >
               Delete
             </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* View Document Dialog */}
+        <Dialog
+          open={viewDialog.open}
+          onClose={handleViewClose}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              maxHeight: '80vh'
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            bgcolor: '#009688',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <Visibility />
+            View Document
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            {viewDialog.loading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                <LinearProgress sx={{ width: '100%' }} />
+              </Box>
+            ) : viewDialog.doc && (
+              <Box>
+                {/* Document Header */}
+                <Box sx={{ 
+                  bgcolor: '#e0f2f1', 
+                  p: 2, 
+                  borderRadius: 2, 
+                  mb: 3,
+                  border: '1px solid #b2dfdb'
+                }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="#00695c" fontWeight={600}>
+                        Document Name:
+                      </Typography>
+                      <Typography variant="body1" sx={{ mt: 0.5 }}>
+                        {viewDialog.doc.name}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="#00695c" fontWeight={600}>
+                        Document Type:
+                      </Typography>
+                      <Typography variant="body1" sx={{ mt: 0.5, textTransform: 'uppercase' }}>
+                        {viewDialog.doc.type}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="#00695c" fontWeight={600}>
+                        Status:
+                      </Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        <Chip
+                          label={viewDialog.doc.status}
+                          color={statusConfig[viewDialog.doc.status].color}
+                          icon={statusConfig[viewDialog.doc.status].icon}
+                          variant="outlined"
+                          size="small"
+                          sx={{ 
+                            borderWidth: 2, 
+                            fontWeight: 500,
+                            '& .MuiChip-icon': { color: 'inherit !important' }
+                          }}
+                        />
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="#00695c" fontWeight={600}>
+                        Upload Date:
+                      </Typography>
+                      <Typography variant="body1" sx={{ mt: 0.5 }}>
+                        {new Date(viewDialog.doc.date).toLocaleDateString()}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+
+                {/* Document Content */}
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#00695c' }}>
+                    Document Content
+                  </Typography>
+                  
+                  {viewDialog.content?.type === 'pdf' ? (
+                    <Box sx={{ 
+                      border: '1px solid #e0e0e0', 
+                      borderRadius: 2, 
+                      p: 2,
+                      bgcolor: '#fafafa'
+                    }}>
+                      <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <Description sx={{ color: '#009688' }} />
+                        <Typography variant="body1" fontWeight={500}>
+                          PDF Document
+                        </Typography>
+                      </Box>
+                      <Button
+                        variant="contained"
+                        href={viewDialog.content.url}
+                        target="_blank"
+                        startIcon={<Visibility />}
+                        sx={{ 
+                          bgcolor: '#009688',
+                          '&:hover': { bgcolor: '#00695c' }
+                        }}
+                      >
+                        Open Document
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box sx={{ 
+                      border: '1px solid #e0e0e0', 
+                      borderRadius: 2, 
+                      p: 3,
+                      bgcolor: '#fafafa',
+                      minHeight: '200px',
+                      maxHeight: '400px',
+                      overflow: 'auto'
+                    }}>
+                      <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
+                        {viewDialog.content?.content || 'Document content not available'}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, bgcolor: '#f5f5f5' }}>
+            <Button 
+              onClick={handleViewClose}
+              sx={{ 
+                color: '#009688',
+                '&:hover': { bgcolor: '#e0f2f1' }
+              }}
+            >
+              Close
+            </Button>
+            {viewDialog.content?.url && (
+              <Button 
+                variant="contained"
+                href={viewDialog.content.url}
+                target="_blank"
+                startIcon={<Visibility />}
+                sx={{ 
+                  bgcolor: '#009688',
+                  '&:hover': { bgcolor: '#00695c' }
+                }}
+              >
+                Open in New Tab
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
 

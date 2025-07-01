@@ -350,7 +350,7 @@ const EmployeeManagement = () => {
                   <MenuItem value="Rejected">Rejected</MenuItem>
                 </Select>
 
-                <Button
+                {/* <Button
                   variant="contained"
                   onClick={() => setPage(1)}
                   sx={{
@@ -370,7 +370,7 @@ const EmployeeManagement = () => {
                   }}
                 >
                   Apply Filters
-                </Button>
+                </Button> */}
               </Box>
             </Paper>
           </Grow>
@@ -557,46 +557,39 @@ const EmployeeManagement = () => {
                                 >
                                   View
                                 </Button>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  startIcon={<CheckCircle size={16} />}
-                                  onClick={() =>
-                                    handleVerify(employee.id, employee.name)
-                                  }
+                                <select
+                                  value={employee.status}
                                   disabled={employee.status !== "Pending"}
-                                  sx={{
-                                    bgcolor: tealColors[500],
-                                    "&:hover": { bgcolor: tealColors[600] },
-                                    "&:disabled": {
-                                      bgcolor: tealColors[100],
-                                      color: tealColors[400],
-                                    },
+                                  onChange={(e) => {
+                                    const newStatus = e.target.value;
+                                    if (newStatus === "Verified") {
+                                      handleVerify(employee.id, employee.name);
+                                    } else if (newStatus === "Rejected") {
+                                      handleReject(employee.id, employee.name);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: "6px 10px",
+                                    borderRadius: "4px",
+                                    borderColor: "#ccc",
+                                    color:
+                                      employee.status !== "Pending"
+                                        ? "#999"
+                                        : "#000",
+                                    backgroundColor:
+                                      employee.status !== "Pending"
+                                        ? "#f2f2f2"
+                                        : "#fff",
+                                    cursor:
+                                      employee.status !== "Pending"
+                                        ? "not-allowed"
+                                        : "pointer",
                                   }}
                                 >
-                                  Verify
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  startIcon={<XCircle size={16} />}
-                                  onClick={() =>
-                                    handleReject(employee.id, employee.name)
-                                  }
-                                  disabled={employee.status !== "Pending"}
-                                  sx={{
-                                    bgcolor: theme.palette.error.main,
-                                    "&:hover": {
-                                      bgcolor: theme.palette.error.dark,
-                                    },
-                                    "&:disabled": {
-                                      bgcolor: theme.palette.error.light,
-                                      color: theme.palette.error.contrastText,
-                                    },
-                                  }}
-                                >
-                                  Reject
-                                </Button>
+                                  <option value="Pending">Select</option>
+                                  <option value="Verified">Verify</option>
+                                  <option value="Rejected">Reject</option>
+                                </select>
                               </Box>
                             </TableCell>
                           </TableRow>

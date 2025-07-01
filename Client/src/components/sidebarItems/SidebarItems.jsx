@@ -103,6 +103,11 @@ const SidebarItems = ({ toggleMenu, handleToggle }) => {
       path: "/employer",
     },
     {
+      name: "Profile",
+      icon: <BadgeIcon className="w-5 h-5 text-teal-400 cb1:w-6 cb1:h-6" />,
+      path: "/employer/profile",
+    },
+    {
       name: "Employees",
       icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
       path: "/employer/search",
@@ -121,6 +126,11 @@ const SidebarItems = ({ toggleMenu, handleToggle }) => {
       name: "Billings",
       icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
       path: "/employer/billings",
+    },
+    {
+      name: "Plans",
+      icon: <BadgeIcon className="w-5 h-5 text-teal-300 cb1:w-6 cb1:h-6" />,
+      path: "/employer/plans",
     },
   ];
 
