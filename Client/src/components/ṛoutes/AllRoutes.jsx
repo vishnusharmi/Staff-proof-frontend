@@ -161,6 +161,8 @@ import Addons from "../../pages/employee/empDetails/AddOns";
 import Billing from "../../pages/employee/empDetails/Billing";
 import Notifications from "../../pages/employee/empDetails/Notifications"
 import Settings from "../../pages/employee/empDetails/SettingsPage"
+import CompanyProfileManagement from "../../pages/Employer/companyProfile/CompanyProfileManagement";
+import PlansScreen from "../../pages/Employer/plans page/PlansScreen";
 
 
 
@@ -242,6 +244,8 @@ function AllRoutes() {
           path="/employer/verifications"
           element={<EmployeeVerificationSystem />}
         />
+        <Route path="/employer/profile" element={<CompanyProfileManagement/>}/>
+        <Route path="/employer/plans" element={<PlansScreen/>}/>
       </Route>
       {/* </Route> */}
 

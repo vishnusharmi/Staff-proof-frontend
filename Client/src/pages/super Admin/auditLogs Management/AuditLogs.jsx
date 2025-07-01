@@ -403,16 +403,7 @@ const AuditLogs = () => {
                     />
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={exportLogs}
-                    className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50"
-                    disabled={loading || logs.length === 0}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export CSV
-                  </button>
-                </div>
+              
               </div>
             </Fade>
 

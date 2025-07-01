@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Users,
   UserCheck,
@@ -14,6 +14,10 @@ import {
   GraduationCap,
   FileText,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 
 const CaseAssign = () => {
@@ -23,6 +27,8 @@ const CaseAssign = () => {
   const [filterStatus, setFilterStatus] = useState("unassigned");
   const [filterUserType, setFilterUserType] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Mock data for cases
   const cases = [
@@ -103,6 +109,85 @@ const CaseAssign = () => {
       verifier: "Carol Davis",
       priority: "high",
       daysWaiting: 6,
+    },
+    // Additional mock data for better pagination demonstration
+    {
+      id: "SP007",
+      name: "Alex Turner",
+      email: "alex@example.com",
+      type: "employee",
+      company: "Web Solutions",
+      registrationDate: "2024-01-19",
+      status: "unassigned",
+      documentsCount: 4,
+      verifier: null,
+      priority: "medium",
+      daysWaiting: 1,
+    },
+    {
+      id: "SP008",
+      name: "Emma Wilson",
+      email: "emma@example.com",
+      type: "employee",
+      company: "Creative Agency",
+      registrationDate: "2024-01-20",
+      status: "assigned",
+      documentsCount: 5,
+      verifier: "David Brown",
+      priority: "low",
+      daysWaiting: 0,
+    },
+    {
+      id: "SP009",
+      name: "Global Corp",
+      email: "admin@globalcorp.com",
+      type: "company",
+      company: "Global Corp",
+      registrationDate: "2024-01-13",
+      status: "in_verification",
+      documentsCount: 12,
+      verifier: "Alice Johnson",
+      priority: "high",
+      daysWaiting: 5,
+    },
+    {
+      id: "SP010",
+      name: "Tom Richards",
+      email: "tom@example.com",
+      type: "employee",
+      company: "Data Systems",
+      registrationDate: "2024-01-21",
+      status: "unassigned",
+      documentsCount: 3,
+      verifier: null,
+      priority: "medium",
+      daysWaiting: 0,
+    },
+    {
+      id: "SP011",
+      name: "Sophie Martin",
+      email: "sophie@example.com",
+      type: "employee",
+      company: "Design Studio",
+      registrationDate: "2024-01-22",
+      status: "unassigned",
+      documentsCount: 6,
+      verifier: null,
+      priority: "high",
+      daysWaiting: 0,
+    },
+    {
+      id: "SP012",
+      name: "Innovation Inc",
+      email: "hr@innovation.com",
+      type: "company",
+      company: "Innovation Inc",
+      registrationDate: "2024-01-11",
+      status: "reassign_needed",
+      documentsCount: 9,
+      verifier: "Bob Wilson",
+      priority: "medium",
+      daysWaiting: 7,
     },
   ];
 
@@ -192,19 +277,34 @@ const CaseAssign = () => {
     }
   };
 
-  const filteredCases = cases.filter((caseItem) => {
-    const matchesSearch =
-      caseItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || caseItem.status === filterStatus;
-    const matchesType =
-      filterUserType === "all" || caseItem.type === filterUserType;
-    const matchesPriority =
-      filterPriority === "all" || caseItem.priority === filterPriority;
-    return matchesSearch && matchesStatus && matchesType && matchesPriority;
-  });
+  const filteredCases = useMemo(() => {
+    return cases.filter((caseItem) => {
+      const matchesSearch =
+        caseItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        caseItem.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        caseItem.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        filterStatus === "all" || caseItem.status === filterStatus;
+      const matchesType =
+        filterUserType === "all" || caseItem.type === filterUserType;
+      const matchesPriority =
+        filterPriority === "all" || caseItem.priority === filterPriority;
+      return matchesSearch && matchesStatus && matchesType && matchesPriority;
+    });
+  }, [cases, searchTerm, filterStatus, filterUserType, filterPriority]);
+
+  const paginatedCases = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredCases.slice(startIndex, endIndex);
+  }, [filteredCases, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
+
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterUserType, filterPriority, itemsPerPage]);
 
   const handleCaseSelection = (caseId) => {
     setSelectedCases((prev) =>
@@ -212,6 +312,16 @@ const CaseAssign = () => {
         ? prev.filter((id) => id !== caseId)
         : [...prev, caseId]
     );
+  };
+
+  const handleSelectAllOnPage = (checked) => {
+    if (checked) {
+      const pageIds = paginatedCases.map((c) => c.id);
+      setSelectedCases((prev) => [...new Set([...prev, ...pageIds])]);
+    } else {
+      const pageIds = paginatedCases.map((c) => c.id);
+      setSelectedCases((prev) => prev.filter((id) => !pageIds.includes(id)));
+    }
   };
 
   const handleAssignCases = () => {
@@ -248,6 +358,54 @@ const CaseAssign = () => {
     if (percentage >= 70) return "text-yellow-600";
     return "text-green-600";
   };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setSelectedCases([]); // Clear selections when changing pages
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push("...");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  const allPageCasesSelected =
+    paginatedCases.length > 0 &&
+    paginatedCases.every((c) => selectedCases.includes(c.id));
+
+  const somePageCasesSelected = paginatedCases.some((c) =>
+    selectedCases.includes(c.id)
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -374,7 +532,7 @@ const CaseAssign = () => {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white p-6 rounded-lg shadow border mb-8">
+        <div className="bg-white p-4 rounded-lg shadow border mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col md:flex-row gap-4 flex-1">
               <div className="relative">
@@ -416,6 +574,19 @@ const CaseAssign = () => {
                 <option value="high">High Priority</option>
                 <option value="medium">Medium Priority</option>
                 <option value="low">Low Priority</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1">
+              {/* <span className="text-sm text-gray-600"></span> */}
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              >
+                <option value={5}>5 per page</option>
+                <option value={10}>10 per page</option>
+                <option value={25}>25 per page</option>
+                <option value={50}>50 per page</option>
               </select>
             </div>
           </div>
@@ -466,8 +637,27 @@ const CaseAssign = () => {
           </div>
         )}
 
+        {/* Results Summary */}
+        <div className="bg-white px-6 py-3 rounded-t-lg shadow border border-b-0">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Showing{" "}
+              {paginatedCases.length > 0
+                ? (currentPage - 1) * itemsPerPage + 1
+                : 0}{" "}
+              to {Math.min(currentPage * itemsPerPage, filteredCases.length)} of{" "}
+              {filteredCases.length} results
+            </p>
+            {filteredCases.length > itemsPerPage && (
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Cases Table */}
-        <div className="bg-white rounded-lg shadow border overflow-hidden">
+        <div className="bg-white rounded-b-lg shadow border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -475,17 +665,13 @@ const CaseAssign = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <input
                       type="checkbox"
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCases(filteredCases.map((c) => c.id));
-                        } else {
-                          setSelectedCases([]);
-                        }
+                      onChange={(e) => handleSelectAllOnPage(e.target.checked)}
+                      checked={allPageCasesSelected}
+                      ref={(input) => {
+                        if (input)
+                          input.indeterminate =
+                            somePageCasesSelected && !allPageCasesSelected;
                       }}
-                      checked={
-                        selectedCases.length === filteredCases.length &&
-                        filteredCases.length > 0
-                      }
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -512,7 +698,7 @@ const CaseAssign = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCases.map((caseItem) => (
+                {paginatedCases.map((caseItem) => (
                   <tr key={caseItem.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
@@ -616,6 +802,73 @@ const CaseAssign = () => {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="bg-white px-6 py-4 border-t border-gray-200 rounded-b-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="First page"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1">
+                {getPageNumbers().map((page, index) =>
+                  page === "..." ? (
+                    <span key={index} className="px-3 py-2 text-gray-500">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={index}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                        currentPage === page
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-700 hover:bg-gray-100 border border-gray-300"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Last page"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {filteredCases.length === 0 && (
           <div className="text-center py-12">

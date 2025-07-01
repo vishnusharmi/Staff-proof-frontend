@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { MdVisibility } from "react-icons/md";
 
 // Static data
 const staticEmployers = [
@@ -177,11 +178,14 @@ const EmployerManagement = () => {
               <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                 Registration Date
               </th>
-              <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+              {/* <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                 KYC Status
+              </th> */}
+              <th className="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
+                View
               </th>
               <th className="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
-                Actions
+                KYC Status
               </th>
             </tr>
           </thead>
@@ -200,35 +204,67 @@ const EmployerManagement = () => {
                 <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                   {new Date(employer.registration_date).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                {/* <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                   {employer.kyc_status}
+                </td> */}
+                <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
+                  <MdVisibility
+                    style={{ cursor: "pointer", color: "#1976d2" }}
+                    // onClick={() => handleView(employer.id)}
+                    onClick={() => navigate(`/admin/employerDetails`)}
+                    disabled={loading}
+                  />
                 </td>
                 <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
-                  <button
-                    className="text-blue-600 hover:text-blue-900"
-                    onClick={() =>
-                      navigate(`/admin/employerDetails`)
-                    }
+                  <select
+                    className={`
+    text-sm 
+    px-3  
+    border 
+    rounded-md 
+    shadow-sm 
+    focus:outline-none 
+    focus:ring-2 
+    focus:ring-blue-500 
+    focus:border-blue-500 
+    transition 
+    duration-150 
+    ease-in-out 
+    bg-white 
+    text-gray-700 
+    hover:border-gray-400
+    disabled:opacity-50
+  `}
+                    value={employer.kyc_status}
+                    onChange={(e) => {
+                      const newStatus = e.target.value;
+                      if (newStatus === "Verified") {
+                        handleApprove(employer.id, employer.name);
+                      } else if (newStatus === "Rejected") {
+                        handleReject(employer.id, employer.name);
+                      }
+                    }}
                     disabled={loading}
                   >
-                    View
-                  </button>
-                  <span className="px-1 text-gray-300">|</span>
-                  <button
-                    className="text-green-600 hover:text-green-900"
-                    onClick={() => handleApprove(employer.id, employer.name)}
-                    disabled={employer.kyc_status === "Verified" || loading}
-                  >
-                    Approve
-                  </button>
-                  <span className="px-1 text-gray-300">|</span>
-                  <button
-                    className="text-red-600 hover:text-red-900"
-                    onClick={() => handleReject(employer.id, employer.name)}
-                    disabled={employer.kyc_status === "Rejected" || loading}
-                  >
-                    Reject
-                  </button>
+                    <option
+                      value="Pending"
+                      className="text-yellow-600 font-medium border-none"
+                    >
+                      Pending
+                    </option>
+                    <option
+                      value="Verified"
+                      className="text-green-600 font-medium"
+                    >
+                      Verified
+                    </option>
+                    <option
+                      value="Rejected"
+                      className="text-red-600 font-medium"
+                    >
+                      Rejected
+                    </option>
+                  </select>
                 </td>
               </tr>
             ))}

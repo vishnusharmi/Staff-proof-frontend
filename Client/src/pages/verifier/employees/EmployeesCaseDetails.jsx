@@ -10,6 +10,11 @@ import {
   Eye,
   Upload,
   MessageSquare,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreVertical,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 // import { NavLink } from "react-router";
@@ -96,6 +101,13 @@ const EmployeesCaseDetails = () => {
   const [assignedCases, setAssignedCases] = useState(mockData.assignedCases);
   const [selectedCase, setSelectedCase] = useState(null);
   const [showNotes, setShowNotes] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  
+  // Dropdown state
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   // Mock backend functions
   const fetchAssignedCases = () => {
@@ -138,6 +150,86 @@ const EmployeesCaseDetails = () => {
       statusFilter === "all" || case_.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCases = filteredCases.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const goToFirstPage = () => goToPage(1);
+  const goToLastPage = () => goToPage(totalPages);
+  const goToPreviousPage = () => goToPage(currentPage - 1);
+  const goToNextPage = () => goToPage(currentPage + 1);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  // Dropdown handlers
+  const toggleDropdown = (caseId) => {
+    setOpenDropdown(openDropdown === caseId ? null : caseId);
+  };
+
+  const closeDropdown = () => {
+    setOpenDropdown(null);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdown && !event.target.closest('.dropdown-container')) {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -297,7 +389,7 @@ const EmployeesCaseDetails = () => {
 
         {/* Cases List */}
         <div className="space-y-4">
-          {filteredCases.map((case_) => (
+          {currentCases.map((case_) => (
             <div
               key={case_.id}
               className={`bg-white rounded-lg shadow-sm border-l-4 ${getPriorityColor(
@@ -367,29 +459,52 @@ const EmployeesCaseDetails = () => {
                       Notes
                     </button>
 
-                    {/* Quick Action Buttons */}
-                    <div className="flex space-x-1">
+                    {/* Action Dropdown */}
+                    <div className="relative dropdown-container">
                       <button
-                        onClick={() => updateCaseStatus(case_.id, "verified")}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-md"
-                        title="Mark as Verified"
+                        onClick={() => toggleDropdown(case_.id)}
+                        className="p-2 text-gray-600 hover:bg-gray-50 rounded-md border border-gray-300"
+                        title="More Actions"
                       >
-                        <CheckCircle className="h-5 w-5" />
+                        <MoreVertical className="h-5 w-5" />
                       </button>
-                      <button
-                        onClick={() => updateCaseStatus(case_.id, "flagged")}
-                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-md"
-                        title="Flag Case"
-                      >
-                        <AlertTriangle className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => updateCaseStatus(case_.id, "rejected")}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-md"
-                        title="Reject Case"
-                      >
-                        <XCircle className="h-5 w-5" />
-                      </button>
+                      
+                      {openDropdown === case_.id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                          <div className="py-1">
+                            <button
+                              onClick={() => {
+                                updateCaseStatus(case_.id, "verified");
+                                closeDropdown();
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Mark as Verified
+                            </button>
+                            <button
+                              onClick={() => {
+                                updateCaseStatus(case_.id, "flagged");
+                                closeDropdown();
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50"
+                            >
+                              <AlertTriangle className="h-4 w-4 mr-2" />
+                              Flag Case
+                            </button>
+                            <button
+                              onClick={() => {
+                                updateCaseStatus(case_.id, "rejected");
+                                closeDropdown();
+                              }}
+                              className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject Case
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -407,6 +522,98 @@ const EmployeesCaseDetails = () => {
             <p className="mt-1 text-sm text-gray-500">
               Try adjusting your search criteria or filter settings.
             </p>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {filteredCases.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border p-4 mt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Items per page selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Show:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={20}>20</option>
+                </select>
+                <span className="text-sm text-gray-600">per page</span>
+              </div>
+
+              {/* Page info */}
+              <div className="text-sm text-gray-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredCases.length)} of {filteredCases.length} results
+              </div>
+
+              {/* Pagination buttons */}
+              <div className="flex items-center space-x-1">
+                {/* First page button */}
+                <button
+                  onClick={goToFirstPage}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="First page"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+
+                {/* Previous page button */}
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page numbers */}
+                {getPageNumbers().map((page, index) => (
+                  <button
+                    key={index}
+                    onClick={() => typeof page === 'number' && goToPage(page)}
+                    disabled={page === '...'}
+                    className={`px-3 py-2 rounded-md border transition-colors ${
+                      page === currentPage
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : page === '...'
+                        ? 'border-gray-300 text-gray-400 cursor-default'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                {/* Next page button */}
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                {/* Last page button */}
+                <button
+                  onClick={goToLastPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Last page"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

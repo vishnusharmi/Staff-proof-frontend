@@ -17,7 +17,8 @@ import {
   Box,
   Grow,
   Fade,
-  Slide
+  Slide,
+  TablePagination
 } from '@mui/material';
 import {
   CheckCircle,
@@ -45,6 +46,21 @@ const sampleNotifications = [
   { id: 3, message: 'System maintenance scheduled tonight', date: '1 hour ago', type: 'warning', read: true },
   { id: 4, message: 'Security alert: New login detected', date: '5 hours ago', type: 'error', read: false },
   { id: 5, message: 'New document shared with you', date: '1 day ago', type: 'info', read: true },
+  { id: 6, message: 'Profile update completed successfully', date: '2 days ago', type: 'success', read: true },
+  { id: 7, message: 'New verification request received', date: '3 days ago', type: 'info', read: false },
+  { id: 8, message: 'Document verification failed', date: '3 days ago', type: 'error', read: true },
+  { id: 9, message: 'System backup completed', date: '4 days ago', type: 'success', read: true },
+  { id: 10, message: 'Password change notification', date: '4 days ago', type: 'warning', read: false },
+  { id: 11, message: 'New message from admin', date: '5 days ago', type: 'info', read: true },
+  { id: 12, message: 'Account settings updated', date: '5 days ago', type: 'success', read: true },
+  { id: 13, message: 'Login attempt from new device', date: '6 days ago', type: 'warning', read: false },
+  { id: 14, message: 'Document upload successful', date: '6 days ago', type: 'success', read: true },
+  { id: 15, message: 'Verification process started', date: '1 week ago', type: 'info', read: true },
+  { id: 16, message: 'System update available', date: '1 week ago', type: 'warning', read: false },
+  { id: 17, message: 'Account verification completed', date: '1 week ago', type: 'success', read: true },
+  { id: 18, message: 'New feature available', date: '2 weeks ago', type: 'info', read: true },
+  { id: 19, message: 'Security scan completed', date: '2 weeks ago', type: 'success', read: true },
+  { id: 20, message: 'Maintenance window scheduled', date: '2 weeks ago', type: 'warning', read: false },
 ];
 
 export default function Notifications() {
@@ -53,9 +69,14 @@ export default function Notifications() {
   const [selectedType, setSelectedType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   useEffect(() => {
     filterNotifications();
+    setPage(0); // Reset to first page when filters change
   }, [searchTerm, selectedType, notes]);
 
   const filterNotifications = () => {
@@ -77,6 +98,22 @@ export default function Notifications() {
   const handleDelete = (id) => {
     setNotes(prev => prev.filter(note => note.id !== id));
   };
+
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Calculate paginated notifications
+  const paginatedNotifications = filteredNotes.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
     <Slide direction="up" in={true} mountOnEnter unmountOnExit>
@@ -158,7 +195,7 @@ export default function Notifications() {
             </ListSubheader>
           }
         >
-          {filteredNotes.map((note, index) => (
+          {paginatedNotifications.map((note, index) => (
             <Grow key={note.id} in={true} timeout={(index + 1) * 150}>
               <div>
                 <ListItem
@@ -228,6 +265,39 @@ export default function Notifications() {
             </Grow>
           ))}
         </List>
+
+        {/* Pagination Component */}
+        {filteredNotes.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filteredNotes.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            sx={{
+              borderTop: `1px solid ${teal[100]}`,
+              mt: 2,
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                color: teal[800],
+                fontWeight: 500
+              },
+              '& .MuiTablePagination-select': {
+                color: teal[600]
+              },
+              '& .MuiIconButton-root': {
+                color: teal[600],
+                '&:hover': {
+                  backgroundColor: `${teal[100]}40`
+                },
+                '&.Mui-disabled': {
+                  color: teal[300]
+                }
+              }
+            }}
+          />
+        )}
 
         {filteredNotes.length === 0 && !loading && (
           <Fade in={true}>

@@ -60,17 +60,6 @@ const staticEmployers = [
   { id: 3, name: "Global Inc" },
 ];
 
-const staticEvidence = {
-  1: [{ evidence_url: "https://example.com/evidence1.pdf" }],
-  2: [
-    { evidence_url: "https://example.com/evidence2.jpg" },
-    { evidence_url: "https://example.com/evidence3.doc" },
-  ],
-  3: [],
-  4: [{ evidence_url: "https://example.com/evidence4.pdf" }],
-  5: [{ evidence_url: "https://example.com/evidence5.png" }],
-};
-
 const BlacklistManagement = () => {
   const [blacklist, setBlacklist] = useState([]);
   const [employers, setEmployers] = useState([]);
@@ -81,44 +70,10 @@ const BlacklistManagement = () => {
   const [error, setError] = useState(null);
   const itemsPerPage = 5;
 
-  const tealPalette = {
-    50: "#E0F2F1",
-    100: "#B2DFDB",
-    500: "#009688",
-    600: "#00897B",
-    700: "#00796B",
-    800: "#00695C",
-    900: "#004D40",
-  };
-
-  const StatusBadge = ({ status }) => {
-    const styles = {
-      Approved: "bg-teal-100 text-teal-800",
-      Pending: "bg-amber-100 text-amber-800",
-      Rejected: "bg-rose-100 text-rose-800",
-    };
-    return (
-      <span
-        className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}
-      >
-        {status}
-      </span>
-    );
-  };
-
   const loadData = () => {
     setLoading(true);
     try {
-      let filteredData = staticBlacklist.filter((item) => {
-        const matchesSearch =
-          item.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-          item.staffproof_id.toLowerCase().includes(search.toLowerCase());
-        const matchesReporter = reportedByFilter
-          ? item.reported_by === reportedByFilter
-          : true;
-        return matchesSearch && matchesReporter;
-      });
-      setBlacklist(filteredData);
+      setBlacklist(staticBlacklist);
       setEmployers(staticEmployers);
     } catch (err) {
       setError("Failed to load blacklist data");
@@ -129,13 +84,37 @@ const BlacklistManagement = () => {
 
   useEffect(() => {
     loadData();
-  }, [search, reportedByFilter]);
+  }, []);
 
-  const handleAction = (action, id, employeeName) => {
-    // Keep your existing handleAction logic
+  const handleAction = (action, id, name) => {
+    setBlacklist((prev) =>
+      prev.map((entry) =>
+        entry.id === id
+          ? {
+              ...entry,
+              status:
+                action.toLowerCase() === "approve"
+                  ? "Approved"
+                  : action.toLowerCase() === "reject"
+                  ? "Rejected"
+                  : entry.status,
+            }
+          : entry
+      )
+    );
   };
+  
 
-  const filteredBlacklist = blacklist;
+  const filteredBlacklist = blacklist.filter((item) => {
+    const matchesSearch =
+      item.employee_name.toLowerCase().includes(search.toLowerCase()) ||
+      item.staffproof_id.toLowerCase().includes(search.toLowerCase());
+    const matchesReporter = reportedByFilter
+      ? item.reported_by === reportedByFilter
+      : true;
+    return matchesSearch && matchesReporter;
+  });
+
   const paginatedBlacklist = filteredBlacklist.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
@@ -144,7 +123,6 @@ const BlacklistManagement = () => {
   return (
     <div className="min-h-screen p-6 bg-teal-50">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-teal-800">
             Blacklist Management
@@ -241,9 +219,6 @@ const BlacklistManagement = () => {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-teal-700 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-teal-700 uppercase">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-teal-100">
@@ -267,36 +242,24 @@ const BlacklistManagement = () => {
                     <td className="px-6 py-4 text-sm text-teal-700">
                       {new Date(entry.report_date).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={entry.status} />
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button
-                        className="text-teal-600 hover:text-teal-800 text-sm font-medium"
-                        onClick={() =>
-                          handleAction("view", entry.id, entry.employee_name)
-                        }
+                    <td className="px-6 py-4 text-right">
+                      <select
+                        className="text-sm font-medium border rounded px-2 py-1 disabled:opacity-50"
+                        value={entry.status}
+                        disabled={entry.status !== "Pending"}
+                        onChange={(e) => {
+                          const selected = e.target.value;
+                          handleAction(
+                            selected === "Approved" ? "approve" : "reject",
+                            entry.id,
+                            entry.employee_name
+                          );
+                        }}
                       >
-                        View
-                      </button>
-                      <button
-                        className="text-teal-600 hover:text-teal-800 text-sm font-medium disabled:opacity-50"
-                        onClick={() =>
-                          handleAction("approve", entry.id, entry.employee_name)
-                        }
-                        disabled={entry.status === "Approved"}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="text-rose-600 hover:text-rose-800 text-sm font-medium disabled:opacity-50"
-                        onClick={() =>
-                          handleAction("reject", entry.id, entry.employee_name)
-                        }
-                        disabled={entry.status === "Rejected"}
-                      >
-                        Reject
-                      </button>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approve</option>
+                        <option value="Rejected">Reject</option>
+                      </select>
                     </td>
                   </tr>
                 ))}

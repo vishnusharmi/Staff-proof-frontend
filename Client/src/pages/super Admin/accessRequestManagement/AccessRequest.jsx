@@ -23,7 +23,9 @@ import {
   Grow,
   Alert,
   useTheme,
+  FormControl,
 } from "@mui/material";
+
 import SearchIcon from "@mui/icons-material/Search";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -376,51 +378,31 @@ const AccessRequest = () => {
                       </TableCell>
                       <TableCell align="right">
                         {log.status === "Pending" && (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "flex-end",
-                              gap: 1,
-                            }}
-                          >
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() =>
-                                handleAction(
-                                  "approve",
-                                  log.id,
-                                  log.employee_name,
-                                  log.document_type
-                                )
-                              }
-                              disabled={loading}
-                              sx={{
-                                bgcolor: tealColors.main,
-                                "&:hover": { bgcolor: tealColors.dark },
-                                "&:disabled": { bgcolor: tealColors.light },
+                          <FormControl size="small" fullWidth>
+                            <Select
+                              displayEmpty
+                              defaultValue=""
+                              onChange={(e) => {
+                                const action = e.target.value;
+                                if (action === "approve" || action === "deny") {
+                                  handleAction(
+                                    action,
+                                    log.id,
+                                    log.employee_name,
+                                    log.document_type
+                                  );
+                                }
                               }}
-                            >
-                              Approve
-                            </Button>
-
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="error"
-                              onClick={() =>
-                                handleAction(
-                                  "deny",
-                                  log.id,
-                                  log.employee_name,
-                                  log.document_type
-                                )
-                              }
                               disabled={loading}
+                              sx={{ minWidth: 150 }}
                             >
-                              Deny
-                            </Button>
-                          </Box>
+                              <MenuItem value="" disabled>
+                                Select Action
+                              </MenuItem>
+                              <MenuItem value="approve">Approve</MenuItem>
+                              <MenuItem value="deny">Deny</MenuItem>
+                            </Select>
+                          </FormControl>
                         )}
                       </TableCell>
                     </TableRow>
