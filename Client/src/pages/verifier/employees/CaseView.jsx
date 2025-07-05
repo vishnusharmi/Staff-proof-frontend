@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   FileText,
   Upload,
@@ -15,103 +15,9 @@ import {
   Phone,
   Download,
 } from "lucide-react";
-
-// Mock backend data
-const mockCaseData = {
-  employee: {
-    id: "SP001234",
-    name: "Rajesh Kumar",
-    email: "rajesh.kumar@email.com",
-    phone: "+91 9876543210",
-    profileStatus: "Under Review",
-    location: "Hyderabad, Telangana",
-    appliedPosition: "Software Engineer",
-    experience: "3 Years",
-  },
-  jobHistory: [
-    {
-      id: 1,
-      company: "Tech Solutions Pvt Ltd",
-      position: "Software Developer",
-      duration: "Jan 2022 - Present",
-      salary: "₹8,50,000",
-      location: "Hyderabad",
-    },
-    {
-      id: 2,
-      company: "InnovateX Technologies",
-      position: "Junior Developer",
-      duration: "Jun 2020 - Dec 2021",
-      salary: "₹4,50,000",
-      location: "Bangalore",
-    },
-  ],
-  documents: [
-    {
-      id: 1,
-      type: "Resume",
-      filename: "Rajesh_Kumar_Resume.pdf",
-      uploadDate: "2024-06-08",
-      status: "pending",
-      url: "#",
-    },
-    {
-      id: 2,
-      type: "Aadhaar Card",
-      filename: "Aadhaar_Copy.pdf",
-      uploadDate: "2024-06-08",
-      status: "pending",
-      url: "#",
-    },
-    {
-      id: 3,
-      type: "PAN Card",
-      filename: "PAN_Copy.pdf",
-      uploadDate: "2024-06-08",
-      status: "pending",
-      url: "#",
-    },
-    {
-      id: 4,
-      type: "Current Payslip",
-      filename: "May_2024_Payslip.pdf",
-      uploadDate: "2024-06-08",
-      status: "pending",
-      url: "#",
-    },
-    {
-      id: 5,
-      type: "Experience Letter",
-      filename: "InnovateX_Experience.pdf",
-      uploadDate: "2024-06-08",
-      status: "pending",
-      url: "#",
-    },
-    {
-      id: 6,
-      type: "Educational Certificate",
-      filename: "BTech_Certificate.pdf",
-      uploadDate: "2024-06-08",
-      status: "pending",
-      url: "#",
-    },
-  ],
-  notes: [],
-  activityLog: [
-    {
-      id: 1,
-      action: "Case Assigned",
-      timestamp: "2024-06-08 10:30 AM",
-      verifier: "System",
-    },
-    {
-      id: 2,
-      action: "Case Opened",
-      timestamp: "2024-06-08 11:15 AM",
-      verifier: "Priya Sharma",
-    },
-  ],
-};
+import { useParams } from 'react-router-dom';
+import { fetchVerificationCase, updateCaseStatus, addCaseNote, requestClarification } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const flagReasons = [
   "Document Quality Poor",
@@ -132,7 +38,10 @@ const statusTags = [
 ];
 
 const CaseView = () => {
-  const [caseData, setCaseData] = useState(mockCaseData);
+  const { caseId } = useParams();
+  const [caseData, setCaseData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [documentStatuses, setDocumentStatuses] = useState({});
   const [flagReasons, setFlagReasons] = useState({});
@@ -145,72 +54,134 @@ const CaseView = () => {
   const [showClarificationForm, setShowClarificationForm] = useState(false);
   const [supportingEvidence, setSupportingEvidence] = useState({});
 
-  // Mock backend functions
-  const updateDocumentStatus = (docId, status) => {
-    setDocumentStatuses((prev) => ({
-      ...prev,
-      [docId]: status,
-    }));
+  const { user } = useContext(UserContext);
 
-    // Mock activity log update
-    const newActivity = {
-      id: Date.now(),
-      action: `Document ${docId} marked as ${status}`,
-      timestamp: new Date().toLocaleString(),
-      verifier: "Priya Sharma",
+  useEffect(() => {
+    const loadCaseData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetchVerificationCase(caseId);
+        setCaseData(response);
+        setNotes(response.notes || []);
+        
+        // Initialize document statuses from case data
+        const initialStatuses = {};
+        response.documents?.forEach(doc => {
+          initialStatuses[doc.id] = doc.status;
+        });
+        setDocumentStatuses(initialStatuses);
+        
+      } catch (err) {
+        console.error('Error loading case data:', err);
+        setError(err.response?.data?.message || 'Failed to load case data');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setCaseData((prev) => ({
-      ...prev,
-      activityLog: [newActivity, ...prev.activityLog],
-    }));
-  };
+    if (caseId && user) {
+      loadCaseData();
+    }
+  }, [caseId, user]);
 
-  const addNote = () => {
-    if (newNote.trim()) {
-      const note = {
-        id: Date.now(),
-        content: newNote,
-        timestamp: new Date().toLocaleString(),
-        verifier: "Priya Sharma",
-      };
-      setNotes((prev) => [note, ...prev]);
-      setNewNote("");
+  const updateDocumentStatus = async (docId, status) => {
+    try {
+      await updateCaseStatus(caseId, { documentId: docId, status });
+      
+      setDocumentStatuses((prev) => ({
+        ...prev,
+        [docId]: status,
+      }));
 
-      // Mock activity log update
+      // Update activity log
       const newActivity = {
         id: Date.now(),
-        action: "Note Added",
+        action: `Document ${docId} marked as ${status}`,
         timestamp: new Date().toLocaleString(),
-        verifier: "Priya Sharma",
+        verifier: `${user?.firstName} ${user?.lastName}`,
       };
 
       setCaseData((prev) => ({
         ...prev,
-        activityLog: [newActivity, ...prev.activityLog],
+        activityLog: [newActivity, ...(prev.activityLog || [])],
       }));
+    } catch (err) {
+      console.error('Error updating document status:', err);
+      setError(err.response?.data?.message || 'Failed to update document status');
     }
   };
 
-  const submitClarificationRequest = () => {
+  const addNote = async () => {
+    if (newNote.trim()) {
+      try {
+        const noteData = {
+          caseId,
+          content: newNote,
+          verifierId: user?.id
+        };
+        
+        const response = await addCaseNote(noteData);
+        const note = {
+          id: response.id,
+          content: newNote,
+          timestamp: new Date().toLocaleString(),
+          verifier: `${user?.firstName} ${user?.lastName}`,
+        };
+        
+        setNotes((prev) => [note, ...prev]);
+        setNewNote("");
+
+        // Update activity log
+        const newActivity = {
+          id: Date.now(),
+          action: "Note Added",
+          timestamp: new Date().toLocaleString(),
+          verifier: `${user?.firstName} ${user?.lastName}`,
+        };
+
+        setCaseData((prev) => ({
+          ...prev,
+          activityLog: [newActivity, ...(prev.activityLog || [])],
+        }));
+      } catch (err) {
+        console.error('Error adding note:', err);
+        setError(err.response?.data?.message || 'Failed to add note');
+      }
+    }
+  };
+
+  const submitClarificationRequest = async () => {
     if (clarificationRequest.trim()) {
-      alert(`Clarification request sent to ${caseData.employee.name}`);
+      try {
+        await requestClarification({
+          caseId,
+          message: clarificationRequest,
+          verifierId: user?.id
+        });
+        
+        alert(`Clarification request sent to ${caseData.employee.firstName} ${caseData.employee.lastName}`);
 
-      // Mock activity log update
-      const newActivity = {
-        id: Date.now(),
-        action: "Clarification Request Sent",
-        timestamp: new Date().toLocaleString(),
-        verifier: "Priya Sharma",
-      };
+        // Update activity log
+        const newActivity = {
+          id: Date.now(),
+          action: "Clarification Request Sent",
+          timestamp: new Date().toLocaleString(),
+          verifier: `${user?.firstName} ${user?.lastName}`,
+        };
 
-      setCaseData((prev) => ({
-        ...prev,
-        activityLog: [newActivity, ...prev.activityLog],
-      }));
-
-      setClarificationRequest("");
-      setShowClarificationForm(false);
+        setCaseData((prev) => ({
+          ...prev,
+          activityLog: [newActivity, ...(prev.activityLog || [])],
+        }));
+        
+        setClarificationRequest("");
+        setShowClarificationForm(false);
+      } catch (err) {
+        console.error('Error sending clarification request:', err);
+        setError(err.response?.data?.message || 'Failed to send clarification request');
+      }
     }
   };
 
@@ -230,7 +201,7 @@ const CaseView = () => {
         id: Date.now(),
         action: `Case ${finalStatus}`,
         timestamp: new Date().toLocaleString(),
-        verifier: "Priya Sharma",
+        verifier: `${user?.firstName} ${user?.lastName}`,
       };
 
       setCaseData((prev) => ({
@@ -289,7 +260,7 @@ const CaseView = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Case Review</h1>
               <p className="text-gray-600">
-                StaffProof ID: {caseData.employee.id}
+                StaffProof ID: {caseData?.employee.id}
               </p>
             </div>
             <div className="flex gap-3">
@@ -317,7 +288,7 @@ const CaseView = () => {
                   <div className="flex items-center gap-2">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-blue-600 font-semibold">
-                        {caseData.employee.name
+                        {caseData?.employee.name
                           .split(" ")
                           .map((n) => n[0])
                           .join("")}
@@ -325,42 +296,42 @@ const CaseView = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {caseData.employee.name}
+                        {caseData?.employee.name}
                       </h3>
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          caseData.employee.profileStatus === "Under Review"
+                          caseData?.employee.profileStatus === "Under Review"
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {caseData.employee.profileStatus}
+                        {caseData?.employee.profileStatus}
                       </span>
                     </div>
                   </div>
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      {caseData.employee.email}
+                      {caseData?.employee.email}
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4" />
-                      {caseData.employee.phone}
+                      {caseData?.employee.phone}
                     </div>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
-                    {caseData.employee.location}
+                    {caseData?.employee.location}
                   </div>
                   <div className="flex items-center gap-2">
                     <Building className="w-4 h-4" />
-                    {caseData.employee.appliedPosition}
+                    {caseData?.employee.appliedPosition}
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    {caseData.employee.experience} Experience
+                    {caseData?.employee.experience} Experience
                   </div>
                 </div>
               </div>
@@ -372,7 +343,7 @@ const CaseView = () => {
                 Job History (Read-only)
               </h2>
               <div className="space-y-4">
-                {caseData.jobHistory.map((job) => (
+                {caseData?.jobHistory.map((job) => (
                   <div
                     key={job.id}
                     className="border border-gray-200 rounded-lg p-4"
@@ -401,7 +372,7 @@ const CaseView = () => {
                 Document Review
               </h2>
               <div className="space-y-4">
-                {caseData.documents.map((doc) => (
+                {caseData?.documents.map((doc) => (
                   <div
                     key={doc.id}
                     className="border border-gray-200 rounded-lg p-4"
@@ -649,7 +620,7 @@ const CaseView = () => {
                 Activity Log
               </h2>
               <div className="space-y-3 max-h-60 overflow-y-auto">
-                {caseData.activityLog.map((activity) => (
+                {caseData?.activityLog.map((activity) => (
                   <div
                     key={activity.id}
                     className="flex items-center gap-3 p-2 bg-gray-50 rounded-md"

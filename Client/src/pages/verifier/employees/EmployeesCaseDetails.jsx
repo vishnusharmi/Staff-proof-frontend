@@ -17,116 +17,88 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-// import { NavLink } from "react-router";
-
-// Mock backend data
-const mockData = {
-  verifier: {
-    name: "Sarah Johnson",
-    id: "VER_001",
-  },
-  stats: {
-    totalAssigned: 24,
-    casesVerified: 18,
-    casesFlagged: 4,
-    averageVerificationTime: "2.5 hours",
-  },
-  assignedCases: [
-    {
-      id: "SP_001234",
-      employeeName: "Rahul Sharma",
-      profileStatus: "In Progress",
-      assignedDate: "2025-06-08",
-      status: "new",
-      priority: "medium",
-      documents: {
-        resume: "submitted",
-        govtId: "submitted",
-        payslips: "submitted",
-        experienceLetters: "submitted",
-        educationalCerts: "pending",
-      },
-    },
-    {
-      id: "SP_001235",
-      employeeName: "Priya Patel",
-      profileStatus: "Completed",
-      assignedDate: "2025-06-07",
-      status: "verified",
-      priority: "low",
-      documents: {
-        resume: "verified",
-        govtId: "verified",
-        payslips: "verified",
-        experienceLetters: "verified",
-        educationalCerts: "verified",
-      },
-    },
-    {
-      id: "SP_001236",
-      employeeName: "Amit Kumar",
-      profileStatus: "Flagged",
-      assignedDate: "2025-06-09",
-      status: "flagged",
-      priority: "high",
-      documents: {
-        resume: "flagged",
-        govtId: "verified",
-        payslips: "flagged",
-        experienceLetters: "incomplete",
-        educationalCerts: "submitted",
-      },
-    },
-    {
-      id: "SP_001237",
-      employeeName: "Sneha Reddy",
-      profileStatus: "In Progress",
-      assignedDate: "2025-06-10",
-      status: "in_progress",
-      priority: "medium",
-      documents: {
-        resume: "submitted",
-        govtId: "verified",
-        payslips: "submitted",
-        experienceLetters: "submitted",
-        educationalCerts: "submitted",
-      },
-    },
-  ],
-};
+import { fetchVerifierEmployeeCases, updateVerifierCaseStatus } from "../../../components/api/api";
 
 const EmployeesCaseDetails = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [assignedCases, setAssignedCases] = useState(mockData.assignedCases);
+  const [assignedCases, setAssignedCases] = useState([]);
   const [selectedCase, setSelectedCase] = useState(null);
   const [showNotes, setShowNotes] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 5
+  });
   
   // Dropdown state
   const [openDropdown, setOpenDropdown] = useState(null);
 
-  // Mock backend functions
-  const fetchAssignedCases = () => {
-    // Simulate API call
-    return mockData.assignedCases;
-  };
+  // Load employee cases from API
+  useEffect(() => {
+    const loadEmployeeCases = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const params = {
+          search: searchTerm,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          page: currentPage,
+          limit: itemsPerPage
+        };
 
-  const updateCaseStatus = (caseId, newStatus) => {
-    setAssignedCases((prev) =>
-      prev.map((case_) =>
-        case_.id === caseId
-          ? {
-              ...case_,
-              status: newStatus,
-              profileStatus: getProfileStatusFromStatus(newStatus),
-            }
-          : case_
-      )
-    );
+        const response = await fetchVerifierEmployeeCases(params);
+        setAssignedCases(response.data?.cases || []);
+        setPagination(response.data?.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          itemsPerPage: 5
+        });
+      } catch (err) {
+        console.error('Error loading employee cases:', err);
+        setError(err.response?.data?.message || 'Failed to load employee cases');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEmployeeCases();
+  }, [searchTerm, statusFilter, currentPage, itemsPerPage]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  const updateCaseStatus = async (caseId, newStatus) => {
+    try {
+      await updateVerifierCaseStatus(caseId, { status: newStatus });
+      
+      // Update local state
+      setAssignedCases((prev) =>
+        prev.map((case_) =>
+          case_.id === caseId
+            ? {
+                ...case_,
+                status: newStatus,
+                profileStatus: getProfileStatusFromStatus(newStatus),
+              }
+            : case_
+        )
+      );
+    } catch (err) {
+      console.error('Error updating case status:', err);
+      setError(err.response?.data?.message || 'Failed to update case status');
+    }
   };
 
   const getProfileStatusFromStatus = (status) => {
@@ -142,33 +114,13 @@ const EmployeesCaseDetails = () => {
     }
   };
 
-  const filteredCases = assignedCases.filter((case_) => {
-    const matchesSearch =
-      case_.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      case_.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || case_.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentCases = filteredCases.slice(startIndex, endIndex);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
-
   // Pagination handlers
   const goToPage = (page) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    setCurrentPage(Math.max(1, Math.min(page, pagination.totalPages)));
   };
 
   const goToFirstPage = () => goToPage(1);
-  const goToLastPage = () => goToPage(totalPages);
+  const goToLastPage = () => goToPage(pagination.totalPages);
   const goToPreviousPage = () => goToPage(currentPage - 1);
   const goToNextPage = () => goToPage(currentPage + 1);
 
@@ -177,8 +129,8 @@ const EmployeesCaseDetails = () => {
     const pages = [];
     const maxVisiblePages = 5;
     
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
+    if (pagination.totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= pagination.totalPages; i++) {
         pages.push(i);
       }
     } else {
@@ -187,11 +139,11 @@ const EmployeesCaseDetails = () => {
           pages.push(i);
         }
         pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
+        pages.push(pagination.totalPages);
+      } else if (currentPage >= pagination.totalPages - 2) {
         pages.push(1);
         pages.push('...');
-        for (let i = totalPages - 3; i <= totalPages; i++) {
+        for (let i = pagination.totalPages - 3; i <= pagination.totalPages; i++) {
           pages.push(i);
         }
       } else {
@@ -201,14 +153,13 @@ const EmployeesCaseDetails = () => {
           pages.push(i);
         }
         pages.push('...');
-        pages.push(totalPages);
+        pages.push(pagination.totalPages);
       }
     }
     
     return pages;
   };
 
-  // Dropdown handlers
   const toggleDropdown = (caseId) => {
     setOpenDropdown(openDropdown === caseId ? null : caseId);
   };
@@ -234,147 +185,120 @@ const EmployeesCaseDetails = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "verified":
-        return "text-green-600 bg-green-50";
+        return "text-green-600 bg-green-100";
       case "flagged":
-        return "text-yellow-600 bg-yellow-50";
+        return "text-yellow-600 bg-yellow-100";
       case "rejected":
-        return "text-red-600 bg-red-50";
+        return "text-red-600 bg-red-100";
       case "in_progress":
-        return "text-blue-600 bg-blue-50";
+        return "text-blue-600 bg-blue-100";
+      case "new":
+        return "text-purple-600 bg-purple-100";
       default:
-        return "text-gray-600 bg-gray-50";
+        return "text-gray-600 bg-gray-100";
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "high":
-        return "border-l-red-500";
+        return "text-red-600 bg-red-100";
       case "medium":
-        return "border-l-yellow-500";
+        return "text-yellow-600 bg-yellow-100";
       case "low":
-        return "border-l-green-500";
+        return "text-green-600 bg-green-100";
       default:
-        return "border-l-gray-300";
+        return "text-gray-600 bg-gray-100";
     }
   };
 
   const getDocumentStatusIcon = (status) => {
     switch (status) {
       case "verified":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
       case "flagged":
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
       case "rejected":
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case "incomplete":
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      case "submitted":
+        return <Clock className="w-4 h-4 text-blue-500" />;
+      case "pending":
+        return <Clock className="w-4 h-4 text-gray-400" />;
       default:
-        return <FileText className="h-4 w-4 text-blue-500" />;
+        return <FileText className="w-4 h-4 text-gray-400" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading employee cases...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <AlertTriangle size={48} className="mx-auto" />
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="">
+      <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-2">
+          <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Employees Case Management
+                Employee Verification Cases
               </h1>
-              {/* <p className="text-sm text-gray-500">
-                Verifier ID: {mockData.verifier.id}
-              </p> */}
+              <p className="text-gray-600">
+                Manage and track employee verification progress
+              </p>
             </div>
-            {/* <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-500">
-                Session expires in:{" "}
-                <span className="font-medium text-red-600">12:45</span>
-              </div>
-            </div> */}
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        {/* Stats Section */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <FileText className="h-8 w-8 text-blue-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">
-                  Total Assigned Cases
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {mockData.stats.totalAssigned}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">
-                  Cases Verified
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {mockData.stats.casesVerified}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-yellow-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">
-                  Cases Flagged
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {mockData.stats.casesFlagged}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-purple-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">
-                  Avg. Verification Time
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {mockData.stats.averageVerificationTime}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div> */}
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters and Search */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border mb-3">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  placeholder="Search by StaffProof ID or Employee Name"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search employees..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
-            <div className="flex gap-2">
+
+            {/* Status Filter */}
+            <div>
               <select
-                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Status</option>
                 <option value="new">New</option>
@@ -384,231 +308,221 @@ const EmployeesCaseDetails = () => {
                 <option value="rejected">Rejected</option>
               </select>
             </div>
+
+            {/* Items Per Page */}
+            <div>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value={5}>5 per page</option>
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Cases List */}
-        <div className="space-y-4">
-          {currentCases.map((case_) => (
-            <div
-              key={case_.id}
-              className={`bg-white rounded-lg shadow-sm border-l-4 ${getPriorityColor(
-                case_.priority
-              )}`}
-            >
-              <div className="p-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4">
+        {/* Cases Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Employee
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Documents
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {assignedCases.map((case_) => (
+                  <tr key={case_.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <div className="text-sm font-medium text-gray-900">
                           {case_.employeeName}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          StaffProof ID: {case_.id}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Assigned: {case_.assignedDate}
-                        </p>
+                        </div>
+                        <div className="text-sm text-gray-500">{case_.id}</div>
+                        <div className="text-sm text-gray-500">{case_.company}</div>
                       </div>
-                      <div
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
                           case_.status
                         )}`}
                       >
                         {case_.profileStatus}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
+                          case_.priority
+                        )}`}
+                      >
+                        {case_.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex space-x-1">
+                        {Object.entries(case_.documents).map(([docType, status]) => (
+                          <div key={docType} className="flex items-center" title={`${docType}: ${status}`}>
+                            {getDocumentStatusIcon(status)}
+                          </div>
+                        ))}
                       </div>
-                    </div>
-
-                    {/* Document Status */}
-                    <div className="mt-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        Document Status:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(case_.documents).map(
-                          ([docType, status]) => (
-                            <div
-                              key={docType}
-                              className="flex items-center space-x-1 bg-gray-50 px-2 py-1 rounded"
-                            >
-                              {getDocumentStatusIcon(status)}
-                              <span className="text-xs text-gray-600 capitalize">
-                                {docType.replace(/([A-Z])/g, " $1").trim()}
-                              </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(case_.assignedDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="relative dropdown-container">
+                        <button
+                          onClick={() => toggleDropdown(case_.id)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <MoreVertical className="w-5 h-5" />
+                        </button>
+                        {openDropdown === case_.id && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <div className="py-1">
+                              <button
+                                onClick={() => {
+                                  setSelectedCase(case_);
+                                  setShowNotes(true);
+                                  closeDropdown();
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                <MessageSquare className="w-4 h-4 inline mr-2" />
+                                Add Notes
+                              </button>
+                              <button
+                                onClick={() => {
+                                  updateCaseStatus(case_.id, "verified");
+                                  closeDropdown();
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-100"
+                              >
+                                <CheckCircle className="w-4 h-4 inline mr-2" />
+                                Mark Verified
+                              </button>
+                              <button
+                                onClick={() => {
+                                  updateCaseStatus(case_.id, "flagged");
+                                  closeDropdown();
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-yellow-700 hover:bg-gray-100"
+                              >
+                                <AlertTriangle className="w-4 h-4 inline mr-2" />
+                                Flag Case
+                              </button>
+                              <button
+                                onClick={() => {
+                                  updateCaseStatus(case_.id, "rejected");
+                                  closeDropdown();
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-gray-100"
+                              >
+                                <XCircle className="w-4 h-4 inline mr-2" />
+                                Reject Case
+                              </button>
                             </div>
-                          )
+                          </div>
                         )}
                       </div>
-                    </div>
-                  </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                  <div className="flex items-center space-x-2">
-                    <button
-                      //   onClick={() => setSelectedCase(case_)}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      <Link to="/verifier/view">Open Case</Link>
-                    </button>
-                    <button
-                      onClick={() => setShowNotes(!showNotes)}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <Upload className="h-4 w-4 mr-1" />
-                      Notes
-                    </button>
-
-                    {/* Action Dropdown */}
-                    <div className="relative dropdown-container">
-                      <button
-                        onClick={() => toggleDropdown(case_.id)}
-                        className="p-2 text-gray-600 hover:bg-gray-50 rounded-md border border-gray-300"
-                        title="More Actions"
-                      >
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
-                      
-                      {openDropdown === case_.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                          <div className="py-1">
-                            <button
-                              onClick={() => {
-                                updateCaseStatus(case_.id, "verified");
-                                closeDropdown();
-                              }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Mark as Verified
-                            </button>
-                            <button
-                              onClick={() => {
-                                updateCaseStatus(case_.id, "flagged");
-                                closeDropdown();
-                              }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50"
-                            >
-                              <AlertTriangle className="h-4 w-4 mr-2" />
-                              Flag Case
-                            </button>
-                            <button
-                              onClick={() => {
-                                updateCaseStatus(case_.id, "rejected");
-                                closeDropdown();
-                              }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                            >
-                              <XCircle className="h-4 w-4 mr-2" />
-                              Reject Case
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Empty State */}
+          {assignedCases.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No employee cases found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Try adjusting your search or filter criteria.
+              </p>
             </div>
-          ))}
+          )}
         </div>
 
-        {filteredCases.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
-              No cases found
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search criteria or filter settings.
-            </p>
-          </div>
-        )}
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-4 mt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center text-sm text-gray-700">
+                <span>
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to{" "}
+                  {Math.min(currentPage * itemsPerPage, pagination.totalItems)} of{" "}
+                  {pagination.totalItems} results
+                </span>
+              </div>
 
-        {/* Pagination Controls */}
-        {filteredCases.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border p-4 mt-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              {/* Items per page selector */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Show:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={20}>20</option>
-                </select>
-                <span className="text-sm text-gray-600">per page</span>
-              </div>
-
-              {/* Page info */}
-              <div className="text-sm text-gray-600">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredCases.length)} of {filteredCases.length} results
-              </div>
-
-              {/* Pagination buttons */}
-              <div className="flex items-center space-x-1">
-                {/* First page button */}
                 <button
                   onClick={goToFirstPage}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title="First page"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronsLeft className="w-4 h-4" />
                 </button>
-
-                {/* Previous page button */}
                 <button
                   onClick={goToPreviousPage}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title="Previous page"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
 
-                {/* Page numbers */}
                 {getPageNumbers().map((page, index) => (
                   <button
                     key={index}
                     onClick={() => typeof page === 'number' && goToPage(page)}
                     disabled={page === '...'}
-                    className={`px-3 py-2 rounded-md border transition-colors ${
+                    className={`px-3 py-2 text-sm font-medium rounded-md ${
                       page === currentPage
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : page === '...'
-                        ? 'border-gray-300 text-gray-400 cursor-default'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        ? "bg-blue-600 text-white"
+                        : page === "..."
+                        ? "text-gray-400 cursor-default"
+                        : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
                     {page}
                   </button>
                 ))}
 
-                {/* Next page button */}
                 <button
                   onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title="Next page"
+                  disabled={currentPage === pagination.totalPages}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
-
-                {/* Last page button */}
                 <button
                   onClick={goToLastPage}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  title="Last page"
+                  disabled={currentPage === pagination.totalPages}
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronsRight className="w-4 h-4" />
                 </button>
@@ -617,160 +531,6 @@ const EmployeesCaseDetails = () => {
           </div>
         )}
       </div>
-
-      {/* Case Detail Modal */}
-      {selectedCase && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Case Details - {selectedCase.employeeName}
-                </h2>
-                <button
-                  onClick={() => setSelectedCase(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Employee Information
-                  </h3>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-semibold">Name:</span>{" "}
-                      {selectedCase.employeeName}
-                    </p>
-                    <p>
-                      <span className="font-semibold">StaffProof ID:</span>{" "}
-                      {selectedCase.id}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Status:</span>{" "}
-                      {selectedCase.profileStatus}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Assigned Date:</span>{" "}
-                      {selectedCase.assignedDate}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Priority:</span>
-                      <span
-                        className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
-                          selectedCase.priority === "high"
-                            ? "bg-red-100 text-red-800"
-                            : selectedCase.priority === "medium"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {selectedCase.priority.toUpperCase()}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Document Status
-                  </h3>
-                  <div className="space-y-2">
-                    {Object.entries(selectedCase.documents).map(
-                      ([docType, status]) => (
-                        <div
-                          key={docType}
-                          className="flex justify-between items-center"
-                        >
-                          <span className="capitalize">
-                            {docType.replace(/([A-Z])/g, " $1").trim()}:
-                          </span>
-                          <div className="flex items-center space-x-1">
-                            {getDocumentStatusIcon(status)}
-                            <span className="text-sm capitalize">{status}</span>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    // Handle clarification request
-                    alert("Clarification request sent to employee");
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Request Clarification
-                </button>
-                <button
-                  onClick={() => updateCaseStatus(selectedCase.id, "verified")}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-                >
-                  Mark as Verified
-                </button>
-                <button
-                  onClick={() => updateCaseStatus(selectedCase.id, "flagged")}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700"
-                >
-                  Flag Case
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Notes Modal */}
-      {showNotes && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Verification Notes
-                </h2>
-                <button
-                  onClick={() => setShowNotes(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6">
-              <textarea
-                className="w-full h-32 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Add your verification notes here..."
-              />
-              <div className="mt-4 flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowNotes(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    alert("Notes saved successfully");
-                    setShowNotes(false);
-                  }}
-                  className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Save Notes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

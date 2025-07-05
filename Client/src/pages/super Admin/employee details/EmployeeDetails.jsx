@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import {
   ArrowLeft,
   User,
@@ -23,151 +24,44 @@ import {
   Briefcase,
   GraduationCap,
 } from "lucide-react";
+import { fetchEmployeeDetails } from '../../../components/api/api';
 
 const EmployeeDetails = () => {
+  const { id } = useParams();
+  const [employeeData, setEmployeeData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [documentStatus, setDocumentStatus] = useState({});
   const [adminComment, setAdminComment] = useState("");
 
-  // Sample employee data based on SRS requirements
-  const employeeData = {
-    id: "SP-EMP-001234",
-    name: "Rajesh Kumar Sharma",
-    email: "rajesh.sharma@email.com",
-    phone: "+91 9876543210",
-    address:
-      "Flat 301, Green Valley Apartments, Hitech City, Hyderabad, Telangana - 500081",
-    registrationDate: "2024-03-15",
-    verificationStatus: "Pending",
-    profileStatus: "Active",
-    lastLogin: "2024-06-17 14:30:25",
-    totalExperience: "5.5 years",
-    currentDesignation: "Senior Software Engineer",
-    profilePicture:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-    documents: {
-      resume: {
-        uploaded: true,
-        filename: "Rajesh_Kumar_Resume_2024.pdf",
-        uploadDate: "2024-03-15",
-        status: "Verified",
-        size: "2.3 MB",
-      },
-      govtId: {
-        uploaded: true,
-        filename: "Aadhaar_Card.pdf",
-        uploadDate: "2024-03-15",
-        status: "Pending",
-        size: "1.8 MB",
-      },
-      panCard: {
-        uploaded: true,
-        filename: "PAN_Card.pdf",
-        uploadDate: "2024-03-16",
-        status: "Verified",
-        size: "1.2 MB",
-      },
-      payslips: {
-        uploaded: true,
-        filename: "Payslips_Last_3_Months.pdf",
-        uploadDate: "2024-03-17",
-        status: "Rejected",
-        size: "4.1 MB",
-      },
-      experienceLetters: {
-        uploaded: true,
-        filename: "Experience_Letters.pdf",
-        uploadDate: "2024-03-18",
-        status: "Pending",
-        size: "3.7 MB",
-      },
-      educationalCertificates: {
-        uploaded: true,
-        filename: "Educational_Certificates.pdf",
-        uploadDate: "2024-03-19",
-        status: "Verified",
-        size: "5.2 MB",
-      },
-    },
-    jobHistory: [
-      {
-        company: "TechCorp Solutions Pvt Ltd",
-        designation: "Senior Software Engineer",
-        duration: "2022-Present",
-        salary: "₹12,50,000 LPA",
-        location: "Hyderabad",
-        verified: true,
-      },
-      {
-        company: "Innovation Labs India",
-        designation: "Software Engineer",
-        duration: "2020-2022",
-        salary: "₹8,50,000 LPA",
-        location: "Bangalore",
-        verified: true,
-      },
-      {
-        company: "StartUp Ventures",
-        designation: "Junior Developer",
-        duration: "2019-2020",
-        salary: "₹4,50,000 LPA",
-        location: "Pune",
-        verified: false,
-      },
-    ],
-    billingHistory: [
-      {
-        id: "TXN-001",
-        service: "Profile Badge",
-        amount: "₹199",
-        date: "2024-06-15",
-        status: "Completed",
-        paymentMethod: "UPI",
-      },
-      {
-        id: "TXN-002",
-        service: "Document Highlight",
-        amount: "₹99",
-        date: "2024-06-10",
-        status: "Completed",
-        paymentMethod: "Credit Card",
-      },
-      {
-        id: "TXN-003",
-        service: "Premium Verification",
-        amount: "₹499",
-        date: "2024-06-05",
-        status: "Failed",
-        paymentMethod: "Net Banking",
-      },
-    ],
-    accessRequests: [
-      {
-        employer: "Microsoft India",
-        requestedBy: "hr@microsoft.com",
-        documentType: "Complete Profile",
-        status: "Approved",
-        requestDate: "2024-06-16",
-        responseDate: "2024-06-16",
-      },
-      {
-        employer: "Google India",
-        requestedBy: "talent@google.com",
-        documentType: "Experience Letters",
-        status: "Pending",
-        requestDate: "2024-06-17",
-        responseDate: null,
-      },
-      {
-        employer: "Amazon Development Center",
-        requestedBy: "hiring@amazon.com",
-        documentType: "Educational Certificates",
-        status: "Denied",
-        requestDate: "2024-06-14",
-        responseDate: "2024-06-15",
-      },
-    ],
-  };
+  useEffect(() => {
+    const loadEmployee = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchEmployeeDetails(id);
+        setEmployeeData(data);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load employee details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) {
+      loadEmployee();
+    }
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-4">Loading employee details...</div>;
+  }
+  if (error) {
+    return <div className="p-4 text-red-600">{error}</div>;
+  }
+  if (!employeeData) {
+    return <div className="p-4">No employee data found.</div>;
+  }
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -298,7 +192,7 @@ const EmployeeDetails = () => {
                       Verification Status
                     </p>
                     <p className="text-green-900 font-bold text-lg">
-                      {employeeData.verificationStatus}
+                      {employeeData.isVerified}
                     </p>
                   </div>
                   <div className="p-2 bg-green-200 rounded-lg">
@@ -401,7 +295,7 @@ const EmployeeDetails = () => {
                           Registration Date
                         </p>
                         <p className="font-medium">
-                          {employeeData.registrationDate}
+                          {employeeData.createdAt}
                         </p>
                       </div>
                     </div>

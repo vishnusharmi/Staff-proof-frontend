@@ -12,100 +12,42 @@ import {
   Send,
   Filter,
 } from "lucide-react";
+import { fetchVerifierNotes, addVerifierNote, fetchVerifierActivity } from "../../../components/api/api";
 
 const Notes = () => {
-  // Mock data - replace with actual API calls
-  const [notes, setNotes] = useState([
-    {
-      id: 1,
-      verifierId: "VER001",
-      verifierName: "Sarah Johnson",
-      message:
-        "Experience letter from TechCorp appears authentic. Verified company letterhead and HR contact details.",
-      timestamp: "2024-06-11T10:30:00Z",
-      isPrivate: true,
-      attachments: [],
-    },
-    {
-      id: 2,
-      verifierId: "VER001",
-      verifierName: "Sarah Johnson",
-      message: "Payslip amounts match declared salary. No discrepancies found.",
-      timestamp: "2024-06-11T09:15:00Z",
-      isPrivate: true,
-      attachments: ["payslip_verification.png"],
-    },
-  ]);
-
-  const [activities, setActivities] = useState([
-    {
-      id: 1,
-      action: "document_viewed",
-      actionText: "Viewed Experience Letter",
-      verifierId: "VER001",
-      verifierName: "Sarah Johnson",
-      timestamp: "2024-06-11T11:45:00Z",
-      icon: Eye,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      id: 2,
-      action: "document_verified",
-      actionText: "Verified Payslip Documents",
-      verifierId: "VER001",
-      verifierName: "Sarah Johnson",
-      timestamp: "2024-06-11T11:30:00Z",
-      icon: CheckCircle,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      id: 3,
-      action: "document_flagged",
-      actionText: "Flagged Educational Certificate",
-      verifierId: "VER001",
-      verifierName: "Sarah Johnson",
-      timestamp: "2024-06-11T10:45:00Z",
-      icon: Flag,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
-      details: "Reason: University seal unclear",
-    },
-    {
-      id: 4,
-      action: "evidence_uploaded",
-      actionText: "Uploaded Supporting Evidence",
-      verifierId: "VER001",
-      verifierName: "Sarah Johnson",
-      timestamp: "2024-06-11T09:20:00Z",
-      icon: Upload,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-    {
-      id: 5,
-      action: "case_assigned",
-      actionText: "Case Assigned to Verifier",
-      verifierId: "ADMIN",
-      verifierName: "System Admin",
-      timestamp: "2024-06-11T08:00:00Z",
-      icon: User,
-      color: "text-gray-600",
-      bgColor: "bg-gray-50",
-    },
-  ]);
-
+  const [notes, setNotes] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [newNote, setNewNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("notes");
   const [activityFilter, setActivityFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Simulate current verifier
-  const currentVerifier = {
-    id: "VER001",
-    name: "Sarah Johnson",
-  };
+  // Load notes and activities from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [notesRes, activityRes] = await Promise.all([
+          fetchVerifierNotes(),
+          fetchVerifierActivity({ action: activityFilter !== 'all' ? activityFilter : undefined })
+        ]);
+        
+        setNotes(notesRes.data || []);
+        setActivities(activityRes.data?.activities || []);
+      } catch (err) {
+        console.error('Error loading notes and activities:', err);
+        setError(err.response?.data?.message || 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [activityFilter]);
 
   // Filter activities based on selected filter
   const filteredActivities = activities.filter((activity) => {
@@ -135,47 +77,65 @@ const Notes = () => {
     if (!newNote.trim()) return;
 
     setIsSubmitting(true);
+    try {
+      const noteData = {
+        message: newNote.trim(),
+        type: 'internal',
+        isPrivate: true,
+        attachments: []
+      };
 
-    // Simulate API call
-    const noteData = {
-      id: Date.now(),
-      verifierId: currentVerifier.id,
-      verifierName: currentVerifier.name,
-      message: newNote.trim(),
-      timestamp: new Date().toISOString(),
-      isPrivate: true,
-      attachments: [],
-    };
-
-    // Add to notes
-    setNotes((prev) => [noteData, ...prev]);
-
-    // Add to activity log
-    const activityData = {
-      id: Date.now() + 1,
-      action: "note_added",
-      actionText: "Added Internal Note",
-      verifierId: currentVerifier.id,
-      verifierName: currentVerifier.name,
-      timestamp: new Date().toISOString(),
-      icon: MessageSquare,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
-    };
-
-    setActivities((prev) => [activityData, ...prev]);
-    setNewNote("");
-    setIsSubmitting(false);
-
-    // Here you would make actual API calls:
-    // await addNote(noteData);
-    // await logActivity(activityData);
+      const response = await addVerifierNote(noteData);
+      
+      // Add new note to the beginning of the list
+      setNotes((prev) => [response.data, ...prev]);
+      setNewNote("");
+      
+      // Refresh activities to show the new note action
+      const activityRes = await fetchVerifierActivity();
+      setActivities(activityRes.data?.activities || []);
+    } catch (err) {
+      console.error('Error adding note:', err);
+      setError(err.response?.data?.message || 'Failed to add note');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading notes and activities...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <AlertTriangle size={48} className="mx-auto" />
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
-      <div className=" border-gray-200 px-6 py-2">
+      <div className="border-gray-200 px-6 py-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Notes</h3>
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
@@ -189,7 +149,7 @@ const Notes = () => {
             >
               Internal Notes
             </button>
-            {/* <button
+            <button
               onClick={() => setActiveTab("activity")}
               className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                 activeTab === "activity"
@@ -198,198 +158,140 @@ const Notes = () => {
               }`}
             >
               Activity Log
-            </button> */}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-6 py-2">
-        {activeTab === "notes" ? (
-          <div className="space-y-6">
-            {/* Add New Note Section */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <label
-                htmlFor="new-note"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Add Internal Comment
-              </label>
-              <textarea
-                id="new-note"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="Enter your verification findings or notes (visible only to Admin)..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                    handleNoteSubmit(e);
-                  }
-                }}
-              />
-              <div className="flex justify-between items-center mt-3">
-                <span className="text-xs text-gray-500">
-                  <span className="inline-flex items-center">
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    Admin-only visibility • Ctrl+Enter to submit
-                  </span>
-                </span>
+      {/* Tab Content */}
+      {activeTab === "notes" && (
+        <div className="p-6">
+          {/* Add Note Form */}
+          <div className="mb-6">
+            <form onSubmit={handleNoteSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-2">
+                  Add Internal Note
+                </label>
+                <textarea
+                  id="note"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Enter your internal note..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="flex justify-end">
                 <button
-                  type="button"
-                  onClick={handleNoteSubmit}
+                  type="submit"
                   disabled={!newNote.trim() || isSubmitting}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  ) : (
-                    <Send className="w-4 h-4 mr-2" />
-                  )}
-                  Add Note
+                  {isSubmitting ? "Adding..." : "Add Note"}
                 </button>
               </div>
-            </div>
-
-            {/* Notes List */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-700">
-                Previous Notes ({notes.length})
-              </h4>
-              {notes.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                  <p>No internal notes yet</p>
-                </div>
-              ) : (
-                notes.map((note) => (
-                  <div
-                    key={note.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <MessageSquare className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {note.verifierName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {formatTimestamp(note.timestamp)}
-                          </p>
-                        </div>
-                      </div>
-                      {note.isPrivate && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-                          Admin Only
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-sm text-gray-700">{note.message}</p>
-                      {note.attachments.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Attachments:
-                          </p>
-                          {note.attachments.map((attachment, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded mr-2"
-                            >
-                              📎 {attachment}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            </form>
           </div>
-        ) : (
+
+          {/* Notes List */}
           <div className="space-y-4">
-            {/* Activity Filter */}
-            {/* <div className="flex items-center space-x-4">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select
-                value={activityFilter}
-                onChange={(e) => setActivityFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Activities</option>
-                <option value="document_viewed">Document Views</option>
-                <option value="document_verified">Verifications</option>
-                <option value="document_flagged">Flags</option>
-                <option value="evidence_uploaded">Evidence Uploads</option>
-                <option value="note_added">Notes Added</option>
-              </select>
-            </div> */}
-
-            {/* Activity Timeline */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-700">
-                Activity Timeline ({filteredActivities.length})
-              </h4>
-              {filteredActivities.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Clock className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                  <p>No activities found</p>
+            <h4 className="text-md font-medium text-gray-900">Recent Notes</h4>
+            {notes.map((note) => (
+              <div key={note.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-900">
+                      {note.verifierName}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatTimestamp(note.timestamp)}
+                    </span>
+                  </div>
+                  {note.isPrivate && (
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                      Private
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <div className="relative">
-                  {/* Timeline line */}
-                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-
-                  {filteredActivities.map((activity, index) => {
-                    const IconComponent = activity.icon;
-                    return (
-                      <div
-                        key={activity.id}
-                        className="relative flex items-start space-x-4 pb-6"
-                      >
-                        {/* Timeline dot */}
-                        <div
-                          className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full ${activity.bgColor}`}
-                        >
-                          <IconComponent
-                            className={`w-5 h-5 ${activity.color}`}
-                          />
-                        </div>
-
-                        {/* Activity content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="bg-white border border-gray-200 rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium text-gray-900">
-                                {activity.actionText}
-                              </p>
-                              <span className="text-xs text-gray-500">
-                                {formatTimestamp(activity.timestamp)}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">
-                              by {activity.verifierName}
-                            </p>
-                            {activity.details && (
-                              <p className="text-sm text-gray-700 mt-2">
-                                {activity.details}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                <p className="text-sm text-gray-700 mb-2">{note.message}</p>
+                {note.attachments && note.attachments.length > 0 && (
+                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    <Upload className="w-3 h-3" />
+                    <span>{note.attachments.length} attachment(s)</span>
+                  </div>
+                )}
+              </div>
+            ))}
+            {notes.length === 0 && (
+              <p className="text-gray-500 text-center py-4">
+                No notes found. Add your first internal note above.
+              </p>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {activeTab === "activity" && (
+        <div className="p-6">
+          {/* Activity Filter */}
+          <div className="mb-6">
+            <label htmlFor="activity-filter" className="block text-sm font-medium text-gray-700 mb-2">
+              Filter Activities
+            </label>
+            <select
+              id="activity-filter"
+              value={activityFilter}
+              onChange={(e) => setActivityFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Activities</option>
+              <option value="note_created">Notes Added</option>
+              <option value="case_status_updated">Case Status Updated</option>
+              <option value="document_viewed">Documents Viewed</option>
+              <option value="document_verified">Documents Verified</option>
+              <option value="document_flagged">Documents Flagged</option>
+              <option value="clarification_sent">Clarifications Sent</option>
+            </select>
+          </div>
+
+          {/* Activity List */}
+          <div className="space-y-4">
+            <h4 className="text-md font-medium text-gray-900">Activity Log</h4>
+            {filteredActivities.map((activity) => (
+              <div key={activity.id} className="flex items-start space-x-3">
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${activity.bgColor}`}>
+                  <activity.icon className={`w-4 h-4 ${activity.color}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900">
+                      {activity.actionText}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatTimestamp(activity.timestamp)}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    by {activity.verifierName}
+                  </p>
+                  {activity.details && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {activity.details}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+            {filteredActivities.length === 0 && (
+              <p className="text-gray-500 text-center py-4">
+                No activities found for the selected filter.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Box,
   Typography,
@@ -33,6 +33,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { fetchEmployees, updateEmployeeStatus } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const EmployeeManagement = () => {
   const navigate = useNavigate();
@@ -44,6 +46,8 @@ const EmployeeManagement = () => {
   const [error, setError] = useState(null);
   const itemsPerPage = 5;
   const theme = useTheme();
+
+  const { user } = useContext(UserContext);
 
   // Teal color palette
   const tealColors = {
@@ -58,77 +62,34 @@ const EmployeeManagement = () => {
     900: "#004d40",
   };
 
-  // Static dummy data
-  const staticEmployees = [
-    {
-      id: "SP001",
-      name: "John Doe",
-      email: "john.doe@example.com",
-      phone: "+1-555-123-4567",
-      status: "Pending",
-    },
-    {
-      id: "SP002",
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      phone: "+1-555-234-5678",
-      status: "Verified",
-    },
-    {
-      id: "SP003",
-      name: "Alice Johnson",
-      email: "alice.johnson@example.com",
-      phone: "+1-555-345-6789",
-      status: "Rejected",
-    },
-    {
-      id: "SP004",
-      name: "Bob Brown",
-      email: "bob.brown@example.com",
-      phone: "+1-555-456-7890",
-      status: "Pending",
-    },
-    {
-      id: "SP005",
-      name: "Emma Davis",
-      email: "emma.davis@example.com",
-      phone: "+1-555-567-8901",
-      status: "Verified",
-    },
-    {
-      id: "SP006",
-      name: "Michael Wilson",
-      email: "michael.wilson@example.com",
-      phone: "+1-555-678-9012",
-      status: "Pending",
-    },
-  ];
-
   useEffect(() => {
     const loadEmployees = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        setEmployees(staticEmployees);
-      } catch (error) {
-        setError("Error fetching employees");
-        console.error("Error fetching employees:", error);
+        const response = await fetchEmployees();
+        setEmployees(response.data || []);
+      } catch (err) {
+        setError(err.response?.data?.message || "Error fetching employees");
+        console.error("Error fetching employees:", err);
       } finally {
         setLoading(false);
       }
     };
-    loadEmployees();
-  }, []);
+    
+    if (user) {
+      loadEmployees();
+    }
+  }, [user]);
 
   const filteredEmployees = employees.filter(
     (employee) =>
-      (employee.name.toLowerCase().includes(search.toLowerCase()) ||
-        employee.email.toLowerCase().includes(search.toLowerCase()) ||
-        employee.phone.includes(search) ||
-        employee.id.includes(search)) &&
-      (statusFilter === "" || employee.status === statusFilter)
+      (employee.firstName?.toLowerCase().includes(search.toLowerCase()) ||
+        employee.lastName?.toLowerCase().includes(search.toLowerCase()) ||
+        employee.email?.toLowerCase().includes(search.toLowerCase()) ||
+        employee.phone?.includes(search) ||
+        employee.staffProofId?.includes(search)) &&
+      (statusFilter === "" || employee.isVerified === statusFilter)
   );
 
   const paginatedEmployees = filteredEmployees.slice(
@@ -139,14 +100,15 @@ const EmployeeManagement = () => {
   const handleVerify = async (id, name) => {
     setLoading(true);
     try {
+      await updateEmployeeStatus(id, 'verified');
       setEmployees((prev) =>
         prev.map((emp) =>
-          emp.id === id ? { ...emp, status: "Verified" } : emp
+          emp.id === id ? { ...emp, isVerified: "verified" } : emp
         )
       );
       alert(`Verified ${name}`);
-    } catch (error) {
-      setError(`Error verifying employee ${name}`);
+    } catch (err) {
+      setError(err.response?.data?.message || `Error verifying employee ${name}`);
     } finally {
       setLoading(false);
     }
@@ -155,14 +117,15 @@ const EmployeeManagement = () => {
   const handleReject = async (id, name) => {
     setLoading(true);
     try {
+      await updateEmployeeStatus(id, 'rejected');
       setEmployees((prev) =>
         prev.map((emp) =>
-          emp.id === id ? { ...emp, status: "Rejected" } : emp
+          emp.id === id ? { ...emp, isVerified: "rejected" } : emp
         )
       );
       alert(`Rejected ${name}`);
-    } catch (error) {
-      setError(`Error rejecting employee ${name}`);
+    } catch (err) {
+      setError(err.response?.data?.message || `Error rejecting employee ${name}`);
     } finally {
       setLoading(false);
     }
@@ -175,17 +138,17 @@ const EmployeeManagement = () => {
       sx={{
         fontWeight: 600,
         borderRadius: 1,
-        ...(status === "Verified" && {
+        ...(status === "verified" && {
           bgcolor: `${tealColors[100]} !important`,
           color: tealColors[800],
           boxShadow: `0 2px 4px ${tealColors[100]}`,
         }),
-        ...(status === "Pending" && {
+        ...(status === "pending" && {
           bgcolor: `${theme.palette.warning.light} !important`,
           color: theme.palette.warning.dark,
           boxShadow: `0 2px 4px ${theme.palette.warning.light}`,
         }),
-        ...(status === "Rejected" && {
+        ...(status === "rejected" && {
           bgcolor: `${theme.palette.error.light} !important`,
           color: theme.palette.error.dark,
           boxShadow: `0 2px 4px ${theme.palette.error.light}`,
@@ -345,9 +308,9 @@ const EmployeeManagement = () => {
                   }}
                 >
                   <MenuItem value="">All Status</MenuItem>
-                  <MenuItem value="Verified">Verified</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="Rejected">Rejected</MenuItem>
+                  <MenuItem value="verified">Verified</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="rejected">Rejected</MenuItem>
                 </Select>
 
                 {/* <Button
@@ -519,7 +482,7 @@ const EmployeeManagement = () => {
                               {employee.id}
                             </TableCell>
                             <TableCell sx={{ color: tealColors[800] }}>
-                              {employee.name}
+                              {`${employee.firstName} ${employee.lastName}`}
                             </TableCell>
                             <TableCell sx={{ color: tealColors[700] }}>
                               {employee.email}
@@ -528,7 +491,7 @@ const EmployeeManagement = () => {
                               {employee.phone}
                             </TableCell>
                             <TableCell>
-                              <StatusBadge status={employee.status} />
+                              <StatusBadge status={employee.isVerified} />
                             </TableCell>
                             <TableCell align="right">
                               <Box
@@ -558,14 +521,14 @@ const EmployeeManagement = () => {
                                   View
                                 </Button>
                                 <select
-                                  value={employee.status}
-                                  disabled={employee.status !== "Pending"}
+                                  value={employee.isVerified}
+                                  disabled={employee.isVerified !== "pending"}
                                   onChange={(e) => {
                                     const newStatus = e.target.value;
-                                    if (newStatus === "Verified") {
-                                      handleVerify(employee.id, employee.name);
-                                    } else if (newStatus === "Rejected") {
-                                      handleReject(employee.id, employee.name);
+                                    if (newStatus === "verified") {
+                                      handleVerify(employee.id, `${employee.firstName} ${employee.lastName}`);
+                                    } else if (newStatus === "rejected") {
+                                      handleReject(employee.id, `${employee.firstName} ${employee.lastName}`);
                                     }
                                   }}
                                   style={{
@@ -573,22 +536,22 @@ const EmployeeManagement = () => {
                                     borderRadius: "4px",
                                     borderColor: "#ccc",
                                     color:
-                                      employee.status !== "Pending"
+                                      employee.isVerified !== "pending"
                                         ? "#999"
                                         : "#000",
                                     backgroundColor:
-                                      employee.status !== "Pending"
+                                      employee.isVerified !== "pending"
                                         ? "#f2f2f2"
                                         : "#fff",
                                     cursor:
-                                      employee.status !== "Pending"
+                                      employee.isVerified !== "pending"
                                         ? "not-allowed"
                                         : "pointer",
                                   }}
                                 >
-                                  <option value="Pending">Select</option>
-                                  <option value="Verified">Verify</option>
-                                  <option value="Rejected">Reject</option>
+                                  <option value="pending">Select</option>
+                                  <option value="verified">Verify</option>
+                                  <option value="rejected">Reject</option>
                                 </select>
                               </Box>
                             </TableCell>

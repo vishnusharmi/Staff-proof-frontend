@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Building2,
@@ -22,129 +23,43 @@ import {
   Activity,
   Settings,
 } from "lucide-react";
+import { fetchEmployerDetails } from '../../../components/api/api';
 
 const EmployerDetails = () => {
+  const { id } = useParams();
+  const [employerData, setEmployerData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedDocument, setSelectedDocument] = useState(null);
 
-  // Sample employer data
-  const employerData = {
-    id: "EMP-2024-001",
-    companyName: "TechVision Solutions Pvt Ltd",
-    email: "hr@techvision.com",
-    phone: "+91 98765 43210",
-    website: "www.techvision.com",
-    address: "Tower A, Cyber Towers, HITEC City, Hyderabad, Telangana 500081",
-    registrationDate: "2024-01-15",
-    kycStatus: "verified",
-    subscriptionPlan: "Enterprise",
-    planExpiry: "2024-12-15",
-    employeesVerified: 247,
-    monthlyRevenue: 45000,
-    totalRevenue: 540000,
-    status: "active",
-    lastActive: "2024-06-18T10:30:00Z",
-    rating: 4.8,
+  useEffect(() => {
+    const loadEmployer = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchEmployerDetails(id);
+        setEmployerData(data);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load employer details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) {
+      loadEmployer();
+    }
+  }, [id]);
 
-    // Company documents
-    documents: [
-      {
-        id: 1,
-        type: "PAN Card",
-        fileName: "company_pan.pdf",
-        uploadDate: "2024-01-15",
-        status: "verified",
-        verifiedBy: "Admin_Sarah",
-        verifiedDate: "2024-01-16",
-      },
-      {
-        id: 2,
-        type: "GST Certificate",
-        fileName: "gst_certificate.pdf",
-        uploadDate: "2024-01-15",
-        status: "verified",
-        verifiedBy: "Admin_Sarah",
-        verifiedDate: "2024-01-16",
-      },
-      {
-        id: 3,
-        type: "Certificate of Incorporation",
-        fileName: "incorporation_cert.pdf",
-        uploadDate: "2024-01-15",
-        status: "verified",
-        verifiedBy: "Admin_Sarah",
-        verifiedDate: "2024-01-16",
-      },
-      {
-        id: 4,
-        type: "Business License",
-        fileName: "business_license.pdf",
-        uploadDate: "2024-02-01",
-        status: "pending",
-        verifiedBy: null,
-        verifiedDate: null,
-      },
-    ],
-
-    // Usage logs
-    // usageLogs: [
-    //   {
-    //     id: 1,
-    //     action: "Employee Profile Accessed",
-    //     employeeName: "Rahul Sharma",
-    //     employeeId: "SP-2024-0156",
-    //     timestamp: "2024-06-18T09:45:00Z",
-    //     accessType: "Full Profile",
-    //   },
-    //   {
-    //     id: 2,
-    //     action: "Background Check Requested",
-    //     employeeName: "Priya Patel",
-    //     employeeId: "SP-2024-0189",
-    //     timestamp: "2024-06-18T08:30:00Z",
-    //     accessType: "Verification Only",
-    //   },
-    //   {
-    //     id: 3,
-    //     action: "Bulk Export",
-    //     employeeName: "Multiple Employees",
-    //     employeeId: "BULK-001",
-    //     timestamp: "2024-06-17T16:20:00Z",
-    //     accessType: "CSV Export",
-    //   },
-    // ],
-
-    // Billing history
-    billingHistory: [
-      {
-        id: 1,
-        invoiceNumber: "INV-2024-001",
-        amount: 45000,
-        date: "2024-06-01",
-        status: "paid",
-        description: "Enterprise Plan - June 2024",
-        paymentMethod: "Bank Transfer",
-      },
-      {
-        id: 2,
-        invoiceNumber: "INV-2024-002",
-        amount: 45000,
-        date: "2024-05-01",
-        status: "paid",
-        description: "Enterprise Plan - May 2024",
-        paymentMethod: "UPI",
-      },
-      {
-        id: 3,
-        invoiceNumber: "INV-2024-003",
-        amount: 45000,
-        date: "2024-04-01",
-        status: "paid",
-        description: "Enterprise Plan - April 2024",
-        paymentMethod: "Credit Card",
-      },
-    ],
-  };
+  if (loading) {
+    return <div className="p-4">Loading employer details...</div>;
+  }
+  if (error) {
+    return <div className="p-4 text-red-600">{error}</div>;
+  }
+  if (!employerData) {
+    return <div className="p-4">No employer data found.</div>;
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -325,7 +240,7 @@ const EmployerDetails = () => {
                           </p>
                           <p className="font-medium text-gray-800">
                             {new Date(
-                              employerData.registrationDate
+                              employerData.createdAt
                             ).toLocaleDateString()}
                           </p>
                         </div>

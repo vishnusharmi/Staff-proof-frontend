@@ -16,111 +16,61 @@ import {
   TrendingUp,
   Eye
 } from 'lucide-react';
+import { fetchDashboard, fetchProfile } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const EmpDashboard = () => {
   const [copiedId, setCopiedId] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [profileData, setProfileData] = useState(null);
   const itemsPerPage = 5;
   
-  // Mock data - in real app this would come from API
-  const employeeData = {
-    fullName: "John Doe",
-    staffProofId: "SP-2024001",
-    verificationStatus: "verified", // pending, verified, rejected
-    stats: {
-      documentsUploaded: 12,
-      jobRecords: 3,
-      pendingVerifications: 2,
-      accessRequests: 8,
-      profileViews: 247,
-      verificationScore: 95
-    },
-    recentActivities: [
-      {
-        id: 1,
-        action: "You added a job record for Tech Solutions Ltd",
-        timestamp: "2 hours ago",
-        type: "job",
-        icon: Briefcase
-      },
-      {
-        id: 2,
-        action: "XYZ Corporation requested your documents",
-        timestamp: "4 hours ago",
-        type: "request",
-        icon: Download
-      },
-      {
-        id: 3,
-        action: "Admin verified your PAN card",
-        timestamp: "1 day ago",
-        type: "verification",
-        icon: CheckCircle
-      },
-      {
-        id: 4,
-        action: "You updated your educational certificates",
-        timestamp: "2 days ago",
-        type: "upload",
-        icon: Upload
-      },
-      {
-        id: 5,
-        action: "Profile viewed by ABC Technologies",
-        timestamp: "2 days ago",
-        type: "view",
-        icon: Eye
-      },
-      {
-        id: 6,
-        action: "Microsoft India requested access to your profile",
-        timestamp: "3 days ago",
-        type: "request",
-        icon: Download
-      },
-      {
-        id: 7,
-        action: "You uploaded salary certificate",
-        timestamp: "4 days ago",
-        type: "upload",
-        icon: Upload
-      },
-      {
-        id: 8,
-        action: "Admin approved your degree certificate",
-        timestamp: "5 days ago",
-        type: "verification",
-        icon: CheckCircle
-      },
-      {
-        id: 9,
-        action: "Profile updated with new contact information",
-        timestamp: "1 week ago",
-        type: "profile",
-        icon: User
-      },
-      {
-        id: 10,
-        action: "You added work experience at Google",
-        timestamp: "1 week ago",
-        type: "job",
-        icon: Briefcase
-      },
-      {
-        id: 11,
-        action: "TCS requested your employment history",
-        timestamp: "1 week ago",
-        type: "request",
-        icon: Download
-      },
-      {
-        id: 12,
-        action: "Admin verified your Aadhaar document",
-        timestamp: "2 weeks ago",
-        type: "verification",
-        icon: CheckCircle
+  const { user } = useContext(UserContext);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch dashboard data for employee role
+        const dashboardResponse = await fetchDashboard('employee');
+        setDashboardData(dashboardResponse);
+        
+        // Fetch user profile data
+        const profileResponse = await fetchProfile();
+        setProfileData(profileResponse);
+        
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
       }
-    ]
+    };
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  // Use real data or fallback to mock data structure
+  const employeeData = {
+    fullName: profileData?.firstName && profileData?.lastName ? `${profileData.firstName} ${profileData.lastName}` : user?.fullName || "Loading...",
+    staffProofId: profileData?.staffProofId || user?.staffProofId || "SP-2024001",
+    isVerified: profileData?.isVerified === true,
+    stats: dashboardData?.stats || {
+      documentsUploaded: 0,
+      jobRecords: 0,
+      pendingVerifications: 0,
+      accessRequests: 0,
+      profileViews: 0,
+      verificationScore: 0
+    },
+    recentActivities: dashboardData?.recentActivities || []
   };
 
   const copyStaffProofId = () => {
@@ -129,48 +79,29 @@ const EmpDashboard = () => {
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'verified':
-        return {
-          text: 'Verified',
-          bgColor: 'bg-gradient-to-r from-green-50 to-emerald-50',
-          textColor: 'text-green-700',
-          borderColor: 'border-green-200',
-          icon: CheckCircle,
-          badge: '🟢'
-        };
-      case 'pending':
-        return {
-          text: 'Pending',
-          bgColor: 'bg-gradient-to-r from-yellow-50 to-amber-50',
-          textColor: 'text-yellow-700',
-          borderColor: 'border-yellow-200',
-          icon: Clock,
-          badge: '🟡'
-        };
-      case 'rejected':
-        return {
-          text: 'Rejected',
-          bgColor: 'bg-gradient-to-r from-red-50 to-rose-50',
-          textColor: 'text-red-700',
-          borderColor: 'border-red-200',
-          icon: XCircle,
-          badge: '🔴'
-        };
-      default:
-        return {
-          text: 'Unknown',
-          bgColor: 'bg-gradient-to-r from-gray-50 to-slate-50',
-          textColor: 'text-gray-700',
-          borderColor: 'border-gray-200',
-          icon: Clock,
-          badge: '⚪'
-        };
+  const getStatusConfig = (isVerified) => {
+    if (isVerified) {
+      return {
+        text: 'Verified',
+        bgColor: 'bg-gradient-to-r from-green-50 to-emerald-50',
+        textColor: 'text-green-700',
+        borderColor: 'border-green-200',
+        icon: CheckCircle,
+        badge: '🟢'
+      };
+    } else {
+      return {
+        text: 'Pending',
+        bgColor: 'bg-gradient-to-r from-yellow-50 to-amber-50',
+        textColor: 'text-yellow-700',
+        borderColor: 'border-yellow-200',
+        icon: Clock,
+        badge: '🟡'
+      };
     }
   };
 
-  const statusConfig = getStatusConfig(employeeData.verificationStatus);
+  const statusConfig = getStatusConfig(employeeData.isVerified);
   const StatusIcon = statusConfig.icon;
 
   const getActivityIcon = (type) => {
@@ -260,6 +191,36 @@ const EmpDashboard = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-4 md:p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-4 md:p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <XCircle size={48} className="mx-auto" />
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-4 md:p-6">

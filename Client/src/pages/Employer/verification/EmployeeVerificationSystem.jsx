@@ -1,400 +1,5 @@
-// import React, { useState } from "react";
-// import {
-//   Search,
-//   Shield,
-//   ShieldCheck,
-//   Mail,
-//   Phone,
-//   Calendar,
-//   MapPin,
-//   Clock,
-//   CheckCircle,
-//   XCircle,
-//   AlertCircle,
-// } from "lucide-react";
-
-// const EmployeeVerificationSystem = () => {
-//   const [activeTab, setActiveTab] = useState("verified");
-//   const [searchTerm, setSearchTerm] = useState("");
-
-//   // Sample data for verified employees
-//   const verifiedEmployees = [
-//     {
-//       id: 1,
-//       name: "Sarah Johnson",
-//       position: "Senior Developer",
-//       department: "Engineering",
-//       email: "sarah.johnson@company.com",
-//       phone: "+1 (555) 123-4567",
-//       joinDate: "2022-03-15",
-//       location: "New York, NY",
-//       avatar:
-//         "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-//       verificationDate: "2024-01-15",
-//       skills: ["React", "Node.js", "Python"],
-//     },
-//     {
-//       id: 2,
-//       name: "Michael Chen",
-//       position: "Product Manager",
-//       department: "Product",
-//       email: "michael.chen@company.com",
-//       phone: "+1 (555) 234-5678",
-//       joinDate: "2021-11-20",
-//       location: "San Francisco, CA",
-//       avatar:
-//         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-//       verificationDate: "2024-01-10",
-//       skills: ["Strategy", "Analytics", "Leadership"],
-//     },
-//     {
-//       id: 3,
-//       name: "Emily Rodriguez",
-//       position: "UX Designer",
-//       department: "Design",
-//       email: "emily.rodriguez@company.com",
-//       phone: "+1 (555) 345-6789",
-//       joinDate: "2023-01-08",
-//       location: "Austin, TX",
-//       avatar:
-//         "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-//       verificationDate: "2024-01-20",
-//       skills: ["Figma", "Prototyping", "User Research"],
-//     },
-//   ];
-
-//   // Sample data for unverified employees
-//   const unverifiedEmployees = [
-//     {
-//       id: 4,
-//       name: "David Wilson",
-//       position: "Junior Developer",
-//       department: "Engineering",
-//       email: "david.wilson@company.com",
-//       phone: "+1 (555) 456-7890",
-//       joinDate: "2024-06-01",
-//       location: "Chicago, IL",
-//       avatar:
-//         "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-//       submissionDate: "2024-06-15",
-//       status: "pending",
-//       missingDocs: ["ID Verification", "Address Proof"],
-//     },
-//     {
-//       id: 5,
-//       name: "Lisa Thompson",
-//       position: "Marketing Specialist",
-//       department: "Marketing",
-//       email: "lisa.thompson@company.com",
-//       phone: "+1 (555) 567-8901",
-//       joinDate: "2024-05-20",
-//       location: "Miami, FL",
-//       avatar:
-//         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
-//       submissionDate: "2024-06-10",
-//       status: "review",
-//       missingDocs: ["Educational Certificates"],
-//     },
-//     {
-//       id: 6,
-//       name: "James Park",
-//       position: "Data Analyst",
-//       department: "Analytics",
-//       email: "james.park@company.com",
-//       phone: "+1 (555) 678-9012",
-//       joinDate: "2024-06-05",
-//       location: "Seattle, WA",
-//       avatar:
-//         "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=face",
-//       submissionDate: "2024-06-18",
-//       status: "incomplete",
-//       missingDocs: ["Background Check", "Reference Letters"],
-//     },
-//   ];
-
-//   const currentEmployees =
-//     activeTab === "verified" ? verifiedEmployees : unverifiedEmployees;
-
-//   const filteredEmployees = currentEmployees.filter(
-//     (employee) =>
-//       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       employee.department.toLowerCase().includes(searchTerm.toLowerCase())
-//   );
-
-//   const getStatusColor = (status) => {
-//     switch (status) {
-//       case "pending":
-//         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-//       case "review":
-//         return "bg-blue-100 text-blue-800 border-blue-200";
-//       case "incomplete":
-//         return "bg-red-100 text-red-800 border-red-200";
-//       default:
-//         return "bg-gray-100 text-gray-800 border-gray-200";
-//     }
-//   };
-
-//   const getStatusIcon = (status) => {
-//     switch (status) {
-//       case "pending":
-//         return <Clock className="w-4 h-4" />;
-//       case "review":
-//         return <AlertCircle className="w-4 h-4" />;
-//       case "incomplete":
-//         return <XCircle className="w-4 h-4" />;
-//       default:
-//         return <CheckCircle className="w-4 h-4" />;
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-//       {/* Header */}
-//       <div className="bg-white shadow-sm border-b">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-//           <div className="py-6">
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <h1 className="text-3xl font-bold text-gray-900">
-//                   Employee Verification
-//                 </h1>
-//                 <p className="mt-2 text-gray-600">
-//                   Manage employee verification status and documentation
-//                 </p>
-//               </div>
-//               <div className="flex items-center space-x-4">
-//                 <div className="bg-green-50 px-4 py-2 rounded-lg border border-green-200">
-//                   <div className="flex items-center space-x-2">
-//                     <ShieldCheck className="w-5 h-5 text-green-600" />
-//                     <span className="text-sm font-medium text-green-800">
-//                       {verifiedEmployees.length} Verified
-//                     </span>
-//                   </div>
-//                 </div>
-//                 <div className="bg-amber-50 px-4 py-2 rounded-lg border border-amber-200">
-//                   <div className="flex items-center space-x-2">
-//                     <Shield className="w-5 h-5 text-amber-600" />
-//                     <span className="text-sm font-medium text-amber-800">
-//                       {unverifiedEmployees.length} Pending
-//                     </span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-//         {/* Navigation Tabs */}
-//         <div className="mb-8">
-//           <div className="flex space-x-1 bg-white p-1 rounded-xl shadow-sm border">
-//             <button
-//               onClick={() => setActiveTab("verified")}
-//               className={`flex-1 flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg transition-colors ${
-//                 activeTab === "verified"
-//                   ? "bg-green-500 text-white shadow-sm"
-//                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-//               }`}
-//             >
-//               <ShieldCheck className="w-4 h-4 mr-2" />
-//               Verified Employees ({verifiedEmployees.length})
-//             </button>
-//             <button
-//               onClick={() => setActiveTab("unverified")}
-//               className={`flex-1 flex items-center justify-center px-6 py-3 text-sm font-medium rounded-lg transition-colors ${
-//                 activeTab === "unverified"
-//                   ? "bg-amber-500 text-white shadow-sm"
-//                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-//               }`}
-//             >
-//               <Shield className="w-4 h-4 mr-2" />
-//               Unverified Employees ({unverifiedEmployees.length})
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* Search Bar */}
-//         <div className="mb-8">
-//           <div className="relative max-w-lg">
-//             <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-//             <input
-//               type="text"
-//               placeholder="Search employees by name, position, or department..."
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//               className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
-//             />
-//           </div>
-//         </div>
-
-//         {/* Employee Cards */}
-//         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-//           {filteredEmployees.map((employee) => (
-//             <div
-//               key={employee.id}
-//               className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow duration-300"
-//             >
-//               {/* Card Header */}
-//               <div className="p-6 pb-4">
-//                 <div className="flex items-start space-x-4">
-//                   <img
-//                     src={employee.avatar}
-//                     alt={employee.name}
-//                     className="w-16 h-16 rounded-full object-cover ring-4 ring-white shadow-md"
-//                   />
-//                   <div className="flex-1 min-w-0">
-//                     <div className="flex items-center justify-between">
-//                       <h3 className="text-lg font-semibold text-gray-900 truncate">
-//                         {employee.name}
-//                       </h3>
-//                       {activeTab === "verified" ? (
-//                         <div className="flex items-center space-x-1 bg-green-50 px-2 py-1 rounded-full border border-green-200">
-//                           <CheckCircle className="w-4 h-4 text-green-600" />
-//                           <span className="text-xs font-medium text-green-800">
-//                             Verified
-//                           </span>
-//                         </div>
-//                       ) : (
-//                         <div
-//                           className={`flex items-center space-x-1 px-2 py-1 rounded-full border text-xs font-medium ${getStatusColor(
-//                             employee.status
-//                           )}`}
-//                         >
-//                           {getStatusIcon(employee.status)}
-//                           <span className="capitalize">{employee.status}</span>
-//                         </div>
-//                       )}
-//                     </div>
-//                     <p className="text-sm font-medium text-blue-600 mt-1">
-//                       {employee.position}
-//                     </p>
-//                     <p className="text-sm text-gray-500">
-//                       {employee.department}
-//                     </p>
-//                   </div>
-//                 </div>
-//               </div>
-
-//               {/* Card Body */}
-//               <div className="px-6 pb-6">
-//                 <div className="space-y-3">
-//                   <div className="flex items-center text-sm text-gray-600">
-//                     <Mail className="w-4 h-4 mr-3 text-gray-400" />
-//                     <span className="truncate">{employee.email}</span>
-//                   </div>
-//                   <div className="flex items-center text-sm text-gray-600">
-//                     <Phone className="w-4 h-4 mr-3 text-gray-400" />
-//                     <span>{employee.phone}</span>
-//                   </div>
-//                   <div className="flex items-center text-sm text-gray-600">
-//                     <MapPin className="w-4 h-4 mr-3 text-gray-400" />
-//                     <span>{employee.location}</span>
-//                   </div>
-//                   <div className="flex items-center text-sm text-gray-600">
-//                     <Calendar className="w-4 h-4 mr-3 text-gray-400" />
-//                     <span>
-//                       Joined {new Date(employee.joinDate).toLocaleDateString()}
-//                     </span>
-//                   </div>
-//                 </div>
-
-//                 {/* Additional Info */}
-//                 {activeTab === "verified" ? (
-//                   <div className="mt-4 pt-4 border-t border-gray-100">
-//                     <p className="text-xs text-gray-500 mb-2">
-//                       Verified on{" "}
-//                       {new Date(employee.verificationDate).toLocaleDateString()}
-//                     </p>
-//                     <div className="flex flex-wrap gap-1">
-//                       {employee.skills.map((skill, index) => (
-//                         <span
-//                           key={index}
-//                           className="inline-block bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-full border border-blue-200"
-//                         >
-//                           {skill}
-//                         </span>
-//                       ))}
-//                     </div>
-//                   </div>
-//                 ) : (
-//                   <div className="mt-4 pt-4 border-t border-gray-100">
-//                     <p className="text-xs text-gray-500 mb-2">
-//                       Submitted{" "}
-//                       {new Date(employee.submissionDate).toLocaleDateString()}
-//                     </p>
-//                     {employee.missingDocs &&
-//                       employee.missingDocs.length > 0 && (
-//                         <div>
-//                           <p className="text-xs font-medium text-red-600 mb-1">
-//                             Missing Documents:
-//                           </p>
-//                           <div className="flex flex-wrap gap-1">
-//                             {employee.missingDocs.map((doc, index) => (
-//                               <span
-//                                 key={index}
-//                                 className="inline-block bg-red-50 text-red-700 text-xs px-2 py-1 rounded-full border border-red-200"
-//                               >
-//                                 {doc}
-//                               </span>
-//                             ))}
-//                           </div>
-//                         </div>
-//                       )}
-//                   </div>
-//                 )}
-
-//                 {/* Action Buttons */}
-//                 <div className="mt-4 pt-4 border-t border-gray-100">
-//                   {activeTab === "verified" ? (
-//                     <div className="flex space-x-2">
-//                       <button className="flex-1 bg-blue-50 text-blue-600 py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
-//                         View Profile
-//                       </button>
-//                       <button className="flex-1 bg-gray-50 text-gray-600 py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
-//                         Download Docs
-//                       </button>
-//                     </div>
-//                   ) : (
-//                     <div className="flex space-x-2">
-//                       <button className="flex-1 bg-green-50 text-green-600 py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors">
-//                         Review
-//                       </button>
-//                       <button className="flex-1 bg-amber-50 text-amber-600 py-2 px-4 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors">
-//                         Request Docs
-//                       </button>
-//                     </div>
-//                   )}
-//                 </div>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-
-//         {/* Empty State */}
-//         {filteredEmployees.length === 0 && (
-//           <div className="text-center py-12">
-//             <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-//             <h3 className="text-lg font-medium text-gray-900 mb-2">
-//               No employees found
-//             </h3>
-//             <p className="text-gray-500">Try adjusting your search criteria</p>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default EmployeeVerificationSystem;
-
-
-
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Users,
-  UserCheck,
   Search,
   Filter,
   Eye,
@@ -412,8 +17,11 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { fetchVerifications, assignVerification, fetchCaseAssignments } from '../../../components/api/api';
 
 const CaseAssign = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedCases, setSelectedCases] = useState([]);
   const [selectedVerifier, setSelectedVerifier] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -422,344 +30,156 @@ const CaseAssign = () => {
   const [filterPriority, setFilterPriority] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [cases, setCases] = useState([]);
+  const [verifiers, setVerifiers] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [assigning, setAssigning] = useState(false);
 
-  // Mock data for cases
-  const cases = [
-    {
-      id: "SP001",
-      name: "John Doe",
-      email: "john@example.com",
-      type: "employee",
-      company: "Tech Corp",
-      registrationDate: "2024-01-15",
-      status: "unassigned",
-      documentsCount: 5,
-      verifier: null,
-      priority: "high",
-      daysWaiting: 3,
-    },
-    {
-      id: "SP002",
-      name: "Jane Smith",
-      email: "jane@example.com",
-      type: "employee",
-      company: "Digital Solutions",
-      registrationDate: "2024-01-16",
-      status: "assigned",
-      documentsCount: 4,
-      verifier: "Alice Johnson",
-      priority: "medium",
-      daysWaiting: 2,
-    },
-    {
-      id: "SP003",
-      name: "TechCorp Ltd",
-      email: "hr@techcorp.com",
-      type: "company",
-      company: "TechCorp Ltd",
-      registrationDate: "2024-01-14",
-      status: "in_verification",
-      documentsCount: 8,
-      verifier: "Bob Wilson",
-      priority: "low",
-      daysWaiting: 4,
-    },
-    {
-      id: "SP004",
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      type: "employee",
-      company: "StartupXYZ",
-      registrationDate: "2024-01-17",
-      status: "unassigned",
-      documentsCount: 3,
-      verifier: null,
-      priority: "high",
-      daysWaiting: 1,
-    },
-    {
-      id: "SP005",
-      name: "Mike Chen",
-      email: "mike@example.com",
-      type: "employee",
-      company: "Innovation Labs",
-      registrationDate: "2024-01-18",
-      status: "unassigned",
-      documentsCount: 6,
-      verifier: null,
-      priority: "medium",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP006",
-      name: "Lisa Wang",
-      email: "lisa@example.com",
-      type: "employee",
-      company: "Future Tech",
-      registrationDate: "2024-01-12",
-      status: "reassign_needed",
-      documentsCount: 7,
-      verifier: "Carol Davis",
-      priority: "high",
-      daysWaiting: 6,
-    },
-    // Additional mock data for better pagination demonstration
-    {
-      id: "SP007",
-      name: "Alex Turner",
-      email: "alex@example.com",
-      type: "employee",
-      company: "Web Solutions",
-      registrationDate: "2024-01-19",
-      status: "unassigned",
-      documentsCount: 4,
-      verifier: null,
-      priority: "medium",
-      daysWaiting: 1,
-    },
-    {
-      id: "SP008",
-      name: "Emma Wilson",
-      email: "emma@example.com",
-      type: "employee",
-      company: "Creative Agency",
-      registrationDate: "2024-01-20",
-      status: "assigned",
-      documentsCount: 5,
-      verifier: "David Brown",
-      priority: "low",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP009",
-      name: "Global Corp",
-      email: "admin@globalcorp.com",
-      type: "company",
-      company: "Global Corp",
-      registrationDate: "2024-01-13",
-      status: "in_verification",
-      documentsCount: 12,
-      verifier: "Alice Johnson",
-      priority: "high",
-      daysWaiting: 5,
-    },
-    {
-      id: "SP010",
-      name: "Tom Richards",
-      email: "tom@example.com",
-      type: "employee",
-      company: "Data Systems",
-      registrationDate: "2024-01-21",
-      status: "unassigned",
-      documentsCount: 3,
-      verifier: null,
-      priority: "medium",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP011",
-      name: "Sophie Martin",
-      email: "sophie@example.com",
-      type: "employee",
-      company: "Design Studio",
-      registrationDate: "2024-01-22",
-      status: "unassigned",
-      documentsCount: 6,
-      verifier: null,
-      priority: "high",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP012",
-      name: "Innovation Inc",
-      email: "hr@innovation.com",
-      type: "company",
-      company: "Innovation Inc",
-      registrationDate: "2024-01-11",
-      status: "reassign_needed",
-      documentsCount: 9,
-      verifier: "Bob Wilson",
-      priority: "medium",
-      daysWaiting: 7,
-    },
-  ];
+  // Fetch verification cases and verifiers on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch verification cases
+        const casesResponse = await fetchVerifications({
+          page: currentPage,
+          limit: itemsPerPage,
+          status: filterStatus,
+          type: filterUserType,
+          priority: filterPriority,
+          search: searchTerm
+        });
+        
+        // Fetch case assignments for verifiers
+        const assignmentsResponse = await fetchCaseAssignments();
+        
+        setCases(casesResponse.data.verifications || []);
+        setTotalPages(casesResponse.data.pagination?.totalPages || 1);
+        setVerifiers(assignmentsResponse.data.verifiers || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load verification data');
+        console.error('Error fetching verification data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const verifiers = [
-    {
-      id: "V001",
-      name: "Alice Johnson",
-      email: "alice@staffproof.com",
-      assignedCases: 12,
-      maxCapacity: 20,
-      activeStatus: "active",
-    },
-    {
-      id: "V002",
-      name: "Bob Wilson",
-      email: "bob@staffproof.com",
-      assignedCases: 18,
-      maxCapacity: 20,
-      activeStatus: "active",
-    },
-    {
-      id: "V003",
-      name: "Carol Davis",
-      email: "carol@staffproof.com",
-      assignedCases: 15,
-      maxCapacity: 25,
-      activeStatus: "active",
-    },
-    {
-      id: "V004",
-      name: "David Brown",
-      email: "david@staffproof.com",
-      assignedCases: 8,
-      maxCapacity: 15,
-      activeStatus: "active",
-    },
-  ];
-
-  const stats = {
-    totalCases: cases.length,
-    unassigned: cases.filter((c) => c.status === "unassigned").length,
-    assigned: cases.filter((c) => c.status === "assigned").length,
-    inVerification: cases.filter((c) => c.status === "in_verification").length,
-    highPriority: cases.filter((c) => c.priority === "high").length,
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "unassigned":
-        return "bg-red-100 text-red-800";
-      case "assigned":
-        return "bg-blue-100 text-blue-800";
-      case "in_verification":
-        return "bg-yellow-100 text-yellow-800";
-      case "reassign_needed":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800";
-      case "low":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "unassigned":
-        return <XCircle className="w-4 h-4" />;
-      case "assigned":
-        return <CheckCircle className="w-4 h-4" />;
-      case "in_verification":
-        return <Clock className="w-4 h-4" />;
-      case "reassign_needed":
-        return <AlertTriangle className="w-4 h-4" />;
-      default:
-        return <FileText className="w-4 h-4" />;
-    }
-  };
-
-  const filteredCases = useMemo(() => {
-    return cases.filter((caseItem) => {
-      const matchesSearch =
-        caseItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.id.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        filterStatus === "all" || caseItem.status === filterStatus;
-      const matchesType =
-        filterUserType === "all" || caseItem.type === filterUserType;
-      const matchesPriority =
-        filterPriority === "all" || caseItem.priority === filterPriority;
-      return matchesSearch && matchesStatus && matchesType && matchesPriority;
-    });
-  }, [cases, searchTerm, filterStatus, filterUserType, filterPriority]);
-
-  const paginatedCases = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredCases.slice(startIndex, endIndex);
-  }, [filteredCases, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
-
-  // Reset to first page when filters change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterUserType, filterPriority, itemsPerPage]);
+    fetchData();
+  }, [currentPage, itemsPerPage, filterStatus, filterUserType, filterPriority, searchTerm]);
 
   const handleCaseSelection = (caseId) => {
-    setSelectedCases((prev) =>
-      prev.includes(caseId)
-        ? prev.filter((id) => id !== caseId)
+    setSelectedCases(prev => 
+      prev.includes(caseId) 
+        ? prev.filter(id => id !== caseId)
         : [...prev, caseId]
     );
   };
 
   const handleSelectAllOnPage = (checked) => {
     if (checked) {
-      const pageIds = paginatedCases.map((c) => c.id);
-      setSelectedCases((prev) => [...new Set([...prev, ...pageIds])]);
+      const currentPageCaseIds = cases.map(caseItem => caseItem.id);
+      setSelectedCases(prev => [...new Set([...prev, ...currentPageCaseIds])]);
     } else {
-      const pageIds = paginatedCases.map((c) => c.id);
-      setSelectedCases((prev) => prev.filter((id) => !pageIds.includes(id)));
+      const currentPageCaseIds = cases.map(caseItem => caseItem.id);
+      setSelectedCases(prev => prev.filter(id => !currentPageCaseIds.includes(id)));
     }
   };
 
-  const handleAssignCases = () => {
-    if (selectedCases.length > 0 && selectedVerifier) {
-      const verifierName = verifiers.find(
-        (v) => v.id === selectedVerifier
-      )?.name;
-      alert(
-        `Successfully assigned ${selectedCases.length} cases to ${verifierName}`
+  const handleAssignCases = async () => {
+    if (!selectedVerifier || selectedCases.length === 0) {
+      setError('Please select a verifier and at least one case');
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      setError(null);
+
+      // Assign each selected case
+      const assignPromises = selectedCases.map(caseId =>
+        assignVerification(caseId, { verifierId: selectedVerifier })
       );
+
+      await Promise.all(assignPromises);
+
+      // Refresh data
+      const casesResponse = await fetchVerifications({
+        page: currentPage,
+        limit: itemsPerPage,
+        status: filterStatus,
+        type: filterUserType,
+        priority: filterPriority,
+        search: searchTerm
+      });
+
+      setCases(casesResponse.data.verifications || []);
       setSelectedCases([]);
       setSelectedVerifier("");
+      
+      alert('Cases assigned successfully!');
+    } catch (err) {
+      setError(err.message || 'Failed to assign cases');
+      console.error('Error assigning cases:', err);
+    } finally {
+      setAssigning(false);
     }
   };
 
-  const handleReassignCase = (caseId) => {
-    setSelectedCases([caseId]);
+  const handleReassignCase = async (caseId) => {
+    if (!selectedVerifier) {
+      setError('Please select a verifier');
+      return;
+    }
+
+    try {
+      setAssigning(true);
+      setError(null);
+
+      await assignVerification(caseId, { verifierId: selectedVerifier });
+
+      // Refresh data
+      const casesResponse = await fetchVerifications({
+        page: currentPage,
+        limit: itemsPerPage,
+        status: filterStatus,
+        type: filterUserType,
+        priority: filterPriority,
+        search: searchTerm
+      });
+
+      setCases(casesResponse.data.verifications || []);
+      setSelectedVerifier("");
+      
+      alert('Case reassigned successfully!');
+    } catch (err) {
+      setError(err.message || 'Failed to reassign case');
+      console.error('Error reassigning case:', err);
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const getVerifierWorkload = (verifierId) => {
-    const verifier = verifiers.find((v) => v.id === verifierId);
-    if (!verifier) return "";
-    const percentage = Math.round(
-      (verifier.assignedCases / verifier.maxCapacity) * 100
-    );
-    return `${percentage}%`;
+    const verifier = verifiers.find(v => v.id === verifierId);
+    return verifier ? verifier.assignedCases : 0;
   };
 
   const getVerifierWorkloadColor = (verifierId) => {
-    const verifier = verifiers.find((v) => v.id === verifierId);
-    if (!verifier) return "text-gray-500";
-    const percentage = (verifier.assignedCases / verifier.maxCapacity) * 100;
-    if (percentage >= 90) return "text-red-600";
-    if (percentage >= 70) return "text-yellow-600";
+    const workload = getVerifierWorkload(verifierId);
+    if (workload >= 15) return "text-red-600";
+    if (workload >= 10) return "text-yellow-600";
     return "text-green-600";
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    setSelectedCases([]); // Clear selections when changing pages
   };
 
   const getPageNumbers = () => {
     const pages = [];
-    const maxVisiblePages = 2;
+    const maxVisiblePages = 5;
 
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
@@ -792,298 +212,238 @@ const CaseAssign = () => {
     return pages;
   };
 
-  const allPageCasesSelected =
-    paginatedCases.length > 0 &&
-    paginatedCases.every((c) => selectedCases.includes(c.id));
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "unassigned":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      case "assigned":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "in_verification":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "reassign_needed":
+        return "bg-red-100 text-red-800 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
 
-  const somePageCasesSelected = paginatedCases.some((c) =>
-    selectedCases.includes(c.id)
-  );
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "high":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low":
+        return "bg-green-100 text-green-800 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "unassigned":
+        return <Clock className="w-4 h-4" />;
+      case "assigned":
+        return <AlertTriangle className="w-4 h-4" />;
+      case "in_verification":
+        return <CheckCircle className="w-4 h-4" />;
+      case "completed":
+        return <CheckCircle className="w-4 h-4" />;
+      case "reassign_needed":
+        return <XCircle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading verification cases...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Case Assignment Dashboard
-          </h1>
-          <p className="text-gray-600">
-            Assign verification cases to available verifiers and manage workload
-            distribution
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Cases</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.totalCases}
-                </p>
-              </div>
-              <FileText className="w-8 h-8 text-blue-600" />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Employee Verification System
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Manage and assign verification cases to verifiers
+              </p>
             </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Unassigned</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {stats.unassigned}
-                </p>
-              </div>
-              <XCircle className="w-8 h-8 text-red-600" />
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Assigned</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {stats.assigned}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  In Verification
-                </p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {stats.inVerification}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-yellow-600" />
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  High Priority
-                </p>
-                <p className="text-2xl font-bold text-red-600">
-                  {stats.highPriority}
-                </p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        {/* Verifier Workload Overview */}
-        <div className="bg-white p-6 rounded-lg shadow border mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Verifier Workload
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {verifiers.map((verifier) => (
-              <div key={verifier.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium text-gray-900">
-                      {verifier.name}
-                    </span>
-                  </div>
-                  <span
-                    className={`text-sm font-medium ${getVerifierWorkloadColor(
-                      verifier.id
-                    )}`}
-                  >
-                    {getVerifierWorkload(verifier.id)}
+            <div className="flex items-center gap-4">
+              <div className="bg-green-50 px-4 py-2 rounded-lg border border-green-200">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">
+                    {cases.filter(c => c.status === 'completed').length} Completed
                   </span>
                 </div>
-                <div className="text-sm text-gray-600">
-                  {verifier.assignedCases}/{verifier.maxCapacity} cases
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div
-                    className={`h-2 rounded-full ${
-                      verifier.assignedCases / verifier.maxCapacity >= 0.9
-                        ? "bg-red-500"
-                        : verifier.assignedCases / verifier.maxCapacity >= 0.7
-                        ? "bg-yellow-500"
-                        : "bg-green-500"
-                    }`}
-                    style={{
-                      width: `${
-                        (verifier.assignedCases / verifier.maxCapacity) * 100
-                      }%`,
-                    }}
-                  ></div>
+              </div>
+              <div className="bg-amber-50 px-4 py-2 rounded-lg border border-amber-200">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-800">
+                    {cases.filter(c => c.status === 'unassigned').length} Pending
+                  </span>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+            <AlertTriangle size={18} className="mr-2" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Filters and Search */}
-        <div className="bg-white p-6 rounded-lg shadow border mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col md:flex-row gap-4 flex-1">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search by name, email, or case ID..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-80"
+                  placeholder="Search cases..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Status</option>
                 <option value="unassigned">Unassigned</option>
                 <option value="assigned">Assigned</option>
                 <option value="in_verification">In Verification</option>
+                <option value="completed">Completed</option>
                 <option value="reassign_needed">Reassign Needed</option>
               </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
               <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={filterUserType}
                 onChange={(e) => setFilterUserType(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Types</option>
                 <option value="employee">Employee</option>
                 <option value="company">Company</option>
               </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
               <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Priority</option>
-                <option value="high">High Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="low">Low Priority</option>
+                <option value="all">All Priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Show:</span>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Verifier</label>
               <select
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                value={selectedVerifier}
+                onChange={(e) => setSelectedVerifier(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value={5}>5 per page</option>
-                <option value={10}>10 per page</option>
-                <option value={25}>25 per page</option>
-                <option value={50}>50 per page</option>
+                <option value="">Select Verifier</option>
+                {verifiers.map((verifier) => (
+                  <option key={verifier.id} value={verifier.id}>
+                    {verifier.name} ({verifier.assignedCases}/{verifier.maxCapacity})
+                  </option>
+                ))}
               </select>
             </div>
-          </div>
-        </div>
-
-        {/* Assignment Panel */}
-        {selectedCases.length > 0 && (
-          <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-lg mb-8">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  {selectedCases.length} cases selected
-                </div>
-                <ArrowRight className="w-5 h-5 text-blue-600" />
-                <select
-                  className="px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                  value={selectedVerifier}
-                  onChange={(e) => setSelectedVerifier(e.target.value)}
-                >
-                  <option value="">Select Verifier</option>
-                  {verifiers
-                    .filter((v) => v.activeStatus === "active")
-                    .map((verifier) => (
-                      <option key={verifier.id} value={verifier.id}>
-                        {verifier.name} ({verifier.assignedCases}/
-                        {verifier.maxCapacity} cases)
-                      </option>
-                    ))}
-                </select>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleAssignCases}
-                  disabled={!selectedVerifier}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-medium flex items-center gap-2"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Assign Cases
-                </button>
-                <button
-                  onClick={() => setSelectedCases([])}
-                  className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-medium"
-                >
-                  Clear Selection
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Results Summary */}
-        <div className="bg-white px-6 py-3 rounded-t-lg shadow border border-b-0">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing{" "}
-              {paginatedCases.length > 0
-                ? (currentPage - 1) * itemsPerPage + 1
-                : 0}{" "}
-              to {Math.min(currentPage * itemsPerPage, filteredCases.length)} of{" "}
-              {filteredCases.length} results
-            </p>
-            {filteredCases.length > itemsPerPage && (
-              <div className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
-              </div>
-            )}
           </div>
         </div>
 
         {/* Cases Table */}
-        <div className="bg-white rounded-b-lg shadow border overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Verification Cases</h2>
+              <button
+                onClick={handleAssignCases}
+                disabled={selectedCases.length === 0 || !selectedVerifier || assigning}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {assigning ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Assigning...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight size={16} />
+                    Assign Selected ({selectedCases.length})
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left">
                     <input
                       type="checkbox"
                       onChange={(e) => handleSelectAllOnPage(e.target.checked)}
-                      checked={allPageCasesSelected}
-                      ref={(input) => {
-                        if (input)
-                          input.indeterminate =
-                            somePageCasesSelected && !allPageCasesSelected;
-                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Case Details
+                    Case ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priority
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Documents
+                    Priority
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Waiting Days
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Assigned Verifier
+                    Verifier
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -1091,189 +451,144 @@ const CaseAssign = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedCases.map((caseItem) => (
-                  <tr key={caseItem.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedCases.includes(caseItem.id)}
-                        onChange={() => handleCaseSelection(caseItem.id)}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            {caseItem.type === "company" ? (
-                              <Building className="w-5 h-5 text-gray-600" />
-                            ) : (
-                              <GraduationCap className="w-5 h-5 text-gray-600" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {caseItem.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {caseItem.email}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            ID: {caseItem.id}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(
-                          caseItem.priority
-                        )}`}
-                      >
-                        {caseItem.priority.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 w-fit ${getStatusColor(
-                          caseItem.status
-                        )}`}
-                      >
-                        {getStatusIcon(caseItem.status)}
-                        {caseItem.status.replace("_", " ").toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center gap-1">
-                        <FileText className="w-4 h-4" />
-                        {caseItem.documentsCount} docs
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div
-                        className={`flex items-center gap-1 ${
-                          caseItem.daysWaiting > 3
-                            ? "text-red-600"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        <Calendar className="w-4 h-4" />
-                        {caseItem.daysWaiting} days
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {caseItem.verifier ? (
-                        <div className="flex items-center gap-1">
-                          <UserCheck className="w-4 h-4 text-green-600" />
-                          {caseItem.verifier}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 italic">
-                          Not assigned
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        <button className="text-blue-600 hover:text-blue-900 flex items-center gap-1">
-                          <Eye className="w-4 h-4" />
-                          View
-                        </button>
-                        {caseItem.status === "reassign_needed" && (
-                          <button
-                            onClick={() => handleReassignCase(caseItem.id)}
-                            className="text-orange-600 hover:text-orange-900"
-                          >
-                            Reassign
-                          </button>
-                        )}
-                      </div>
+                {cases.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                      <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <p>No verification cases found</p>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  cases.map((caseItem) => (
+                    <tr key={caseItem.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedCases.includes(caseItem.id)}
+                          onChange={() => handleCaseSelection(caseItem.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {caseItem.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{caseItem.name}</div>
+                          <div className="text-sm text-gray-500">{caseItem.email}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          caseItem.type === 'employee' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {caseItem.type === 'employee' ? <User className="w-3 h-3 mr-1" /> : <Building className="w-3 h-3 mr-1" />}
+                          {caseItem.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(caseItem.status)}`}>
+                          {getStatusIcon(caseItem.status)}
+                          <span className="ml-1">{caseItem.status.replace('_', ' ')}</span>
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(caseItem.priority)}`}>
+                          {caseItem.priority}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {caseItem.verifier ? (
+                          <div>
+                            <div>{caseItem.verifier}</div>
+                            <div className={`text-xs ${getVerifierWorkloadColor(caseItem.verifierId)}`}>
+                              {getVerifierWorkload(caseItem.verifierId)} cases
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleReassignCase(caseItem.id)}
+                          disabled={!selectedVerifier || assigning}
+                          className="text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Reassign
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white px-6 py-4 border-t border-gray-200 rounded-b-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handlePageChange(1)}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="First page"
-                >
-                  <ChevronsLeft className="w-4 h-4" />
-                </button>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Previous page"
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  Previous
                 </button>
-              </div>
-
-              <div className="flex items-center gap-1">
-                {getPageNumbers().map((page, index) =>
-                  page === "..." ? (
-                    <span key={index} className="px-3 py-2 text-gray-500">
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={index}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                        currentPage === page
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 hover:bg-gray-100 border border-gray-300"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Next page"
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handlePageChange(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Last page"
-                >
-                  <ChevronsRight className="w-4 h-4" />
+                  Next
                 </button>
               </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing page <span className="font-medium">{currentPage}</span> of{' '}
+                    <span className="font-medium">{totalPages}</span>
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    {getPageNumbers().map((page, index) => (
+                      <button
+                        key={index}
+                        onClick={() => typeof page === 'number' && handlePageChange(page)}
+                        disabled={page === '...'}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          page === currentPage
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : page === '...'
+                            ? 'text-gray-400 cursor-default'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-
-        {filteredCases.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No cases found
-            </h3>
-            <p className="text-gray-600">
-              Try adjusting your filters or search terms.
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

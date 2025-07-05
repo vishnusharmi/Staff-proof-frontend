@@ -1,550 +1,4 @@
-// import { useState } from "react";
-// import {
-//   Search,
-//   Plus,
-//   Upload,
-//   FileText,
-//   Calendar,
-//   AlertTriangle,
-//   X,
-//   CheckCircle,
-//   AlertCircle,
-// } from "lucide-react";
-
-// // Modal component (simplified version since react-modal isn't available)
-// function Modal({ isOpen, onClose, children }) {
-//   if (!isOpen) return null;
-  
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-//       <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-//         <div className="flex justify-end mb-4">
-//           <button
-//             onClick={onClose}
-//             className="text-gray-500 hover:text-gray-700"
-//           >
-//             <X size={24} />
-//           </button>
-//         </div>
-//         {children}
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Separate component for the employee search section
-// function EmployeeSearch({
-//   searchQuery,
-//   setSearchQuery,
-//   handleSearch,
-//   handleKeyPress,
-// }) {
-//   return (
-//     <div className="mb-6">
-//       <label
-//         htmlFor="staffProofId"
-//         className="block text-sm font-medium text-gray-700 mb-1"
-//       >
-//         StaffProof ID (autofill by search)
-//       </label>
-//       <div className="flex">
-//         <div className="relative flex-grow">
-//           <input
-//             id="staffProofId"
-//             type="text"
-//             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-//             placeholder="Enter StaffProof ID (e.g., SP-123456)"
-//             value={searchQuery}
-//             onChange={(e) => setSearchQuery(e.target.value)}
-//             onKeyPress={handleKeyPress}
-//             aria-label="StaffProof ID"
-//           />
-//           <div className="absolute left-3 top-2.5 text-gray-400">
-//             <Search size={18} />
-//           </div>
-//         </div>
-//         <button
-//           className="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 focus:outline-none"
-//           onClick={handleSearch}
-//           aria-label="Search employee"
-//         >
-//           Search
-//         </button>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Employee card when found
-// function EmployeeCard({ employee }) {
-//   return (
-//     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-//       <div className="flex justify-between items-center">
-//         <div>
-//           <h3 className="font-medium text-gray-800">{employee.name}</h3>
-//           <p className="text-gray-600 text-sm">ID: {employee.staffProofId}</p>
-//           <p className="text-gray-600 text-sm">
-//             {employee.role} at {employee.currentCompany}
-//           </p>
-//         </div>
-//         <div className="flex items-center text-red-600 font-medium">
-//           <AlertTriangle size={18} className="mr-1" />
-//           <span>About to blacklist</span>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // File upload component
-// function FileUploader({
-//   fileUploaded,
-//   fileName,
-//   setFileUploaded,
-//   setFileName,
-// }) {
-//   const handleFileUpload = (e) => {
-//     if (e.target.files.length > 0) {
-//       setFileUploaded(true);
-//       setFileName(e.target.files[0].name);
-//     }
-//   };
-
-//   return (
-//     <div className="mb-6">
-//       <label className="block text-sm font-medium text-gray-700 mb-1">
-//         Upload Evidence (Optional – photos, documents)
-//       </label>
-//       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative">
-//         {fileUploaded ? (
-//           <div className="flex items-center justify-center text-green-600">
-//             <CheckCircle size={20} className="mr-2" />
-//             <span>{fileName}</span>
-//             <button
-//               className="ml-2 text-gray-500 hover:text-gray-700"
-//               onClick={() => {
-//                 setFileUploaded(false);
-//                 setFileName("");
-//               }}
-//               aria-label="Remove file"
-//             >
-//               <X size={16} />
-//             </button>
-//           </div>
-//         ) : (
-//           <label htmlFor="file-upload" className="cursor-pointer block">
-//             <Upload className="mx-auto h-12 w-12 text-gray-400" />
-//             <p className="mt-1 text-sm text-gray-500">
-//               Click to upload or drag and drop
-//             </p>
-//             <p className="text-xs text-gray-500">PDF, JPG, PNG (MAX. 10MB)</p>
-//             <input
-//               id="file-upload"
-//               type="file"
-//               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-//               onChange={handleFileUpload}
-//               aria-label="Upload evidence"
-//             />
-//           </label>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Status message component
-// function StatusMessage({ status }) {
-//   if (!status) return null;
-
-//   const messages = {
-//     error: {
-//       className: "bg-red-50 border border-red-200 text-red-700",
-//       icon: <AlertCircle size={18} className="mr-2" />,
-//       text: "Error: Employee must be found before submission.",
-//     },
-//     "missing-reason": {
-//       className: "bg-red-50 border border-red-200 text-red-700",
-//       icon: <AlertCircle size={18} className="mr-2" />,
-//       text: "Error: Please provide a reason for blacklisting.",
-//     },
-//     success: {
-//       className: "bg-green-50 border border-green-200 text-green-700",
-//       icon: <CheckCircle size={18} className="mr-2" />,
-//       text: "Success! Employee has been added to the blacklist.",
-//     },
-//   };
-
-//   const { className, icon, text } = messages[status];
-
-//   return (
-//     <div className={`mb-4 p-3 rounded-lg flex items-center ${className}`}>
-//       {icon}
-//       <span>{text}</span>
-//     </div>
-//   );
-// }
-
-// // Search component for the blacklist table
-// function BlacklistSearch({ searchTerm, setSearchTerm, onClear }) {
-//   return (
-//     <div className="mb-4">
-//       <div className="flex items-center space-x-2">
-//         <div className="relative flex-grow max-w-md">
-//           <input
-//             type="text"
-//             placeholder="Search by StaffProof ID..."
-//             value={searchTerm}
-//             onChange={(e) => setSearchTerm(e.target.value)}
-//             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-//           />
-//           <div className="absolute left-3 top-2.5 text-gray-400">
-//             <Search size={18} />
-//           </div>
-//         </div>
-//         {searchTerm && (
-//           <button
-//             onClick={onClear}
-//             className="px-3 py-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg"
-//           >
-//             <X size={18} />
-//           </button>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-// // Table to display blacklist records
-// function BlacklistTable({ records, searchTerm, setSearchTerm }) {
-//   // Filter records based on search term
-//   const filteredRecords = records.filter((record) =>
-//     record.staffProofId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//     record.employeeName.toLowerCase().includes(searchTerm.toLowerCase())
-//   );
-
-//   const handleClearSearch = () => {
-//     setSearchTerm("");
-//   };
-
-//   return (
-//     <div className="mb-8">
-//       <div className="flex justify-between items-center mb-4">
-//         <h2 className="text-lg font-semibold text-gray-800">
-//           Blacklist Records Table ({filteredRecords.length} records)
-//         </h2>
-//       </div>
-      
-//       <BlacklistSearch 
-//         searchTerm={searchTerm}
-//         setSearchTerm={setSearchTerm}
-//         onClear={handleClearSearch}
-//       />
-
-//       {filteredRecords.length === 0 ? (
-//         <div className="text-center py-8 text-gray-500">
-//           {searchTerm ? "No records found matching your search." : "No blacklist records found."}
-//         </div>
-//       ) : (
-//         <div className="overflow-x-auto border border-gray-200 rounded-lg">
-//           <table className="w-full border-collapse">
-//             <thead>
-//               <tr className="bg-gray-50">
-//                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 border-b">
-//                   Employee Name
-//                 </th>
-//                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 border-b">
-//                   StaffProof ID
-//                 </th>
-//                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 border-b">
-//                   Blacklist Reason
-//                 </th>
-//                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 border-b">
-//                   Evidence
-//                 </th>
-//                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 border-b">
-//                   Date
-//                 </th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {filteredRecords.map((record) => (
-//                 <tr key={record.id} className="hover:bg-gray-50">
-//                   <td className="px-4 py-3 border-b">{record.employeeName}</td>
-//                   <td className="px-4 py-3 border-b font-mono text-sm">
-//                     {record.staffProofId}
-//                   </td>
-//                   <td className="px-4 py-3 border-b">
-//                     <div className="max-w-xs truncate" title={record.reason}>
-//                       {record.reason}
-//                     </div>
-//                   </td>
-//                   <td className="px-4 py-3 border-b">
-//                     {record.evidence !== "None provided" ? (
-//                       <div className="flex items-center text-blue-600 hover:text-blue-800 cursor-pointer">
-//                         <FileText size={16} className="mr-1" />
-//                         <span className="text-sm">{record.evidence}</span>
-//                       </div>
-//                     ) : (
-//                       <span className="text-gray-500 text-sm">None</span>
-//                     )}
-//                   </td>
-//                   <td className="px-4 py-3 border-b">
-//                     <div className="flex items-center text-gray-600">
-//                       <Calendar size={16} className="mr-1" />
-//                       <span className="text-sm">{record.date}</span>
-//                     </div>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           </table>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-// export default function BlacklistManagement() {
-//   // State management
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [employeeFound, setEmployeeFound] = useState(null);
-//   const [reason, setReason] = useState("");
-//   const [fileUploaded, setFileUploaded] = useState(false);
-//   const [fileName, setFileName] = useState("");
-//   const [submissionStatus, setSubmissionStatus] = useState(null);
-//   const [modalOpen, setModalOpen] = useState(false);
-//   const [tableSearchTerm, setTableSearchTerm] = useState("");
-//   const [blacklistRecords, setBlacklistRecords] = useState([
-//     {
-//       id: 1,
-//       employeeName: "Robert Miller",
-//       staffProofId: "SP-234567",
-//       reason:
-//         "Violated company confidentiality policy by sharing internal documents",
-//       evidence: "Confidentiality_Breach_Evidence.pdf",
-//       date: "2025-03-15",
-//     },
-//     {
-//       id: 2,
-//       employeeName: "Emma Thompson",
-//       staffProofId: "SP-876543",
-//       reason: "Falsified qualification certificates during application process",
-//       evidence: "Certificate_Forgery_Proof.jpg",
-//       date: "2025-04-02",
-//     },
-//     {
-//       id: 3,
-//       employeeName: "David Wilson",
-//       staffProofId: "SP-567890",
-//       reason: "Repeated non-compliance with safety protocols",
-//       evidence: "Safety_Violations_Report.pdf",
-//       date: "2025-05-01",
-//     },
-//     {
-//       id: 4,
-//       employeeName: "Sarah Johnson",
-//       staffProofId: "SP-345678",
-//       reason: "Harassment and inappropriate behavior towards colleagues",
-//       evidence: "HR_Complaint_Reports.pdf",
-//       date: "2025-05-15",
-//     },
-//     {
-//       id: 5,
-//       employeeName: "Michael Brown",
-//       staffProofId: "SP-789012",
-//       reason: "Theft of company property and equipment",
-//       evidence: "Security_Camera_Footage.mp4",
-//       date: "2025-06-01",
-//     },
-//   ]);
-
-//   // Mock employee data
-//   const mockEmployee = {
-//     name: "John Smith",
-//     staffProofId: "SP-123456",
-//     currentCompany: "Tech Solutions Inc.",
-//     role: "Software Developer",
-//   };
-
-//   // Handlers
-//   const handleSearch = () => {
-//     if (searchQuery.toUpperCase().startsWith("SP-")) {
-//       setEmployeeFound(mockEmployee);
-//     } else {
-//       setEmployeeFound(null);
-//     }
-//   };
-
-//   const handleKeyPress = (e) => {
-//     if (e.key === "Enter") {
-//       handleSearch();
-//     }
-//   };
-
-//   const handleSubmit = () => {
-//     // Validation
-//     if (!employeeFound) {
-//       setSubmissionStatus("error");
-//       return;
-//     }
-
-//     if (!reason.trim()) {
-//       setSubmissionStatus("missing-reason");
-//       return;
-//     }
-
-//     // Add new blacklist record
-//     const newRecord = {
-//       id: blacklistRecords.length + 1,
-//       employeeName: employeeFound.name,
-//       staffProofId: employeeFound.staffProofId,
-//       reason: reason,
-//       evidence: fileUploaded ? fileName : "None provided",
-//       date: new Date().toISOString().split("T")[0],
-//     };
-
-//     setBlacklistRecords([newRecord, ...blacklistRecords]);
-//     setSubmissionStatus("success");
-
-//     // Reset form after successful submission
-//     setTimeout(() => {
-//       setEmployeeFound(null);
-//       setReason("");
-//       setFileUploaded(false);
-//       setFileName("");
-//       setSearchQuery("");
-//       setSubmissionStatus(null);
-//       setModalOpen(false);
-//     }, 2000);
-//   };
-
-//   const openModal = () => setModalOpen(true);
-//   const closeModal = () => {
-//     setModalOpen(false);
-//     // Reset form when closing
-//     setEmployeeFound(null);
-//     setReason("");
-//     setFileUploaded(false);
-//     setFileName("");
-//     setSearchQuery("");
-//     setSubmissionStatus(null);
-//   };
-
-//   return (
-//     <div className="max-w-5xl mx-auto bg-white p-6">
-//       <div className="border-b border-gray-300 pb-4 mb-5">
-//         <div className="flex items-center justify-between mb-4">
-//           <h1 className="text-2xl font-bold text-gray-800">
-//             Blacklist Management
-//           </h1>
-//           <button
-//             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
-//             aria-label="Add employee"
-//             onClick={openModal}
-//           >
-//             <Plus size={18} className="mr-2" />
-//             Add Employee
-//           </button>
-//         </div>
-
-//         <div className="flex items-center ml-9 mb-2">
-//           <CheckCircle size={18} className="text-green-600 mr-2" />
-//           <p className="text-gray-700">Features:</p>
-//         </div>
-
-//         <ul className="ml-12 mb-4">
-//           <li className="flex items-start mb-2">
-//             <div className="min-w-4 h-4 mt-1 flex items-center justify-center mr-2">
-//               <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
-//             </div>
-//             <p className="text-gray-700">
-//               Ability to <span className="font-semibold">Blacklist</span> an
-//               employee with reasons and evidence.
-//             </p>
-//           </li>
-//           <li className="flex items-start mb-2">
-//             <div className="min-w-4 h-4 mt-1 flex items-center justify-center mr-2">
-//               <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
-//             </div>
-//             <p className="text-gray-700">
-//               <span className="font-semibold">Search</span> blacklist records by StaffProof ID or employee name.
-//             </p>
-//           </li>
-//         </ul>
-//       </div>
-
-//       <Modal isOpen={modalOpen} onClose={closeModal}>
-//         <div className="bg-white">
-//           <h2 className="text-lg font-semibold mb-4 text-gray-800">
-//             Blacklist Form:
-//           </h2>
-
-//           <EmployeeSearch
-//             searchQuery={searchQuery}
-//             setSearchQuery={setSearchQuery}
-//             handleSearch={handleSearch}
-//             handleKeyPress={handleKeyPress}
-//           />
-
-//           {employeeFound && <EmployeeCard employee={employeeFound} />}
-
-//           <div className="mb-6">
-//             <label
-//               htmlFor="blacklist-reason"
-//               className="block text-sm font-medium text-gray-700 mb-1"
-//             >
-//               Reason for Blacklisting
-//             </label>
-//             <textarea
-//               id="blacklist-reason"
-//               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-24"
-//               placeholder="Enter detailed reason for blacklisting this employee..."
-//               value={reason}
-//               onChange={(e) => setReason(e.target.value)}
-//               aria-label="Reason for blacklisting"
-//             ></textarea>
-//           </div>
-          
-//           <FileUploader
-//             fileUploaded={fileUploaded}
-//             fileName={fileName}
-//             setFileUploaded={setFileUploaded}
-//             setFileName={setFileName}
-//           />
-
-//           <StatusMessage status={submissionStatus} />
-
-//           <div className="flex justify-end space-x-3">
-//             <button
-//               className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg"
-//               onClick={closeModal}
-//             >
-//               Cancel
-//             </button>
-//             <button
-//               className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg flex items-center"
-//               onClick={handleSubmit}
-//               aria-label="Submit blacklist"
-//             >
-//               <Plus size={18} className="mr-2" />
-//               Submit Blacklist
-//             </button>
-//           </div>
-//         </div>
-//       </Modal>
-
-//       <BlacklistTable 
-//         records={blacklistRecords} 
-//         searchTerm={tableSearchTerm}
-//         setSearchTerm={setTableSearchTerm}
-//       />
-//     </div>
-//   );
-// }
-
-
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -561,6 +15,7 @@ import {
   Eye,
   Download,
 } from "lucide-react";
+import { fetchBlacklist, addToBlacklist, searchEmployee } from '../../../components/api/api';
 
 // Mock Modal component since react-modal isn't available
 const Modal = ({ isOpen, onRequestClose, children, contentLabel }) => {
@@ -988,6 +443,8 @@ function BlacklistTable({ records, searchTerm, setSearchTerm }) {
 
 export default function BlacklistManagement() {
   // State management
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [employeeFound, setEmployeeFound] = useState(null);
   const [reason, setReason] = useState("");
@@ -996,91 +453,45 @@ export default function BlacklistManagement() {
   const [submissionStatus, setSubmissionStatus] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [tableSearchTerm, setTableSearchTerm] = useState("");
-  const [blacklistRecords, setBlacklistRecords] = useState([
-    {
-      id: 1,
-      employeeName: "Robert Miller",
-      staffProofId: "SP-234567",
-      reason:
-        "Violated company confidentiality policy by sharing internal documents with competitors",
-      evidence: "Confidentiality_Breach_Evidence.pdf",
-      date: "2025-03-15",
-    },
-    {
-      id: 2,
-      employeeName: "Emma Thompson",
-      staffProofId: "SP-876543",
-      reason: "Falsified qualification certificates during application process",
-      evidence: "Certificate_Forgery_Proof.jpg",
-      date: "2025-04-02",
-    },
-    {
-      id: 3,
-      employeeName: "David Wilson",
-      staffProofId: "SP-567890",
-      reason:
-        "Repeated non-compliance with safety protocols resulting in workplace incidents",
-      evidence: "Safety_Violations_Report.pdf",
-      date: "2025-05-01",
-    },
-    {
-      id: 4,
-      employeeName: "Sarah Johnson",
-      staffProofId: "SP-345678",
-      reason: "Harassment of colleagues and inappropriate workplace behavior",
-      evidence: "HR_Complaint_Records.pdf",
-      date: "2025-05-15",
-    },
-    {
-      id: 5,
-      employeeName: "Michael Brown",
-      staffProofId: "SP-789012",
-      reason: "Theft of company property and misuse of company resources",
-      evidence: "Theft_Investigation_Report.pdf",
-      date: "2025-05-20",
-    },
-    {
-      id: 6,
-      employeeName: "Lisa Davis",
-      staffProofId: "SP-456789",
-      reason:
-        "Breach of contract terms and unauthorized disclosure of trade secrets",
-      evidence: "Contract_Breach_Evidence.pdf",
-      date: "2025-06-01",
-    },
-    {
-      id: 7,
-      employeeName: "James Wilson",
-      staffProofId: "SP-654321",
-      reason: "Fraudulent expense claims and financial misconduct",
-      evidence: "Financial_Fraud_Documentation.pdf",
-      date: "2025-06-10",
-    },
-    {
-      id: 8,
-      employeeName: "Amanda Rodriguez",
-      staffProofId: "SP-987654",
-      reason:
-        "Violation of data privacy regulations and unauthorized access to sensitive information",
-      evidence: "Data_Breach_Investigation.pdf",
-      date: "2025-06-15",
-    },
-  ]);
+  const [blacklistRecords, setBlacklistRecords] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Mock employee data
-  const mockEmployee = {
-    name: "John Smith",
-    staffProofId: "SP-123456",
-    currentCompany: "Tech Solutions Inc.",
-    role: "Software Developer",
-  };
+  // Fetch blacklist data on component mount
+  useEffect(() => {
+    const fetchBlacklistData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetchBlacklist();
+        setBlacklistRecords(response.data || []);
+      } catch (err) {
+        setError(err.message || 'Failed to load blacklist data');
+        console.error('Error fetching blacklist:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlacklistData();
+  }, []);
 
   // Handlers
-  const handleSearch = () => {
-    if (searchQuery.toUpperCase().startsWith("SP-")) {
-      setEmployeeFound(mockEmployee);
-    } else {
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      setError(null);
+      const response = await searchEmployee(searchQuery);
+      if (response.data) {
+        setEmployeeFound(response.data);
+      } else {
+        setEmployeeFound(null);
+        setError('Employee not found');
+      }
+    } catch (err) {
       setEmployeeFound(null);
+      setError(err.message || 'Failed to search employee');
+      console.error('Error searching employee:', err);
     }
   };
 
@@ -1090,7 +501,7 @@ export default function BlacklistManagement() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validation
     if (!employeeFound) {
       setSubmissionStatus("error");
@@ -1102,36 +513,67 @@ export default function BlacklistManagement() {
       return;
     }
 
-    // Add new blacklist record
-    const newRecord = {
-      id: blacklistRecords.length + 1,
-      employeeName: employeeFound.name,
-      staffProofId: employeeFound.staffProofId,
-      reason: reason,
-      evidence: fileUploaded ? fileName : "None provided",
-      date: new Date().toISOString().split("T")[0],
-    };
+    try {
+      setSubmitting(true);
+      setError(null);
+      
+      const blacklistData = {
+        employeeId: employeeFound.id,
+        staffProofId: employeeFound.staffProofId,
+        reason: reason,
+        evidence: fileUploaded ? fileName : "None provided",
+      };
 
-    setBlacklistRecords([newRecord, ...blacklistRecords]);
-    setSubmissionStatus("success");
+      const response = await addToBlacklist(blacklistData);
+      
+      // Add new record to local state
+      const newRecord = {
+        id: response.data.id,
+        employeeName: employeeFound.name,
+        staffProofId: employeeFound.staffProofId,
+        reason: reason,
+        evidence: fileUploaded ? fileName : "None provided",
+        date: new Date().toISOString().split("T")[0],
+      };
 
-    // Reset form after successful submission
-    setTimeout(() => {
-      setEmployeeFound(null);
-      setReason("");
-      setFileUploaded(false);
-      setFileName("");
-      setSearchQuery("");
-      setSubmissionStatus(null);
-      setModalOpen(false);
-    }, 2000);
+      setBlacklistRecords([newRecord, ...blacklistRecords]);
+      setSubmissionStatus("success");
+
+      // Reset form after successful submission
+      setTimeout(() => {
+        setEmployeeFound(null);
+        setReason("");
+        setFileUploaded(false);
+        setFileName("");
+        setSearchQuery("");
+        setSubmissionStatus(null);
+        setModalOpen(false);
+      }, 2000);
+    } catch (err) {
+      setError(err.message || 'Failed to add employee to blacklist');
+      console.error('Error adding to blacklist:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const openModal = () => setModalOpen(true);
   const closeModal = () => {
     setModalOpen(false);
     setSubmissionStatus(null);
+    setError(null);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading blacklist data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -1168,6 +610,14 @@ export default function BlacklistManagement() {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+          <AlertCircle size={18} className="mr-2" />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* Modal */}
       <Modal
         isOpen={modalOpen}
@@ -1186,23 +636,26 @@ export default function BlacklistManagement() {
             handleKeyPress={handleKeyPress}
           />
 
-          {employeeFound && <EmployeeCard employee={employeeFound} />}
+          {employeeFound && (
+            <EmployeeCard employee={employeeFound} />
+          )}
 
           <div className="mb-6">
             <label
-              htmlFor="blacklist-reason"
+              htmlFor="reason"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
               Reason for Blacklisting *
             </label>
             <textarea
-              id="blacklist-reason"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-32 resize-none"
-              placeholder="Enter detailed reason for blacklisting this employee..."
+              id="reason"
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              placeholder="Provide detailed reason for blacklisting this employee..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              aria-label="Reason for blacklisting"
-            ></textarea>
+              required
+            />
           </div>
 
           <FileUploader
@@ -1214,31 +667,47 @@ export default function BlacklistManagement() {
 
           <StatusMessage status={submissionStatus} />
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end gap-3 mt-6">
             <button
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={closeModal}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg flex items-center transition-colors"
               onClick={handleSubmit}
-              aria-label="Submit blacklist"
+              disabled={submitting || !employeeFound || !reason.trim()}
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
             >
-              <AlertTriangle size={18} className="mr-2" />
-              Submit Blacklist
+              {submitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle size={16} className="mr-2" />
+                  Add to Blacklist
+                </>
+              )}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Table */}
-      <BlacklistTable
-        records={blacklistRecords}
-        searchTerm={tableSearchTerm}
-        setSearchTerm={setTableSearchTerm}
-      />
+      {/* Blacklist Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Blacklist Records
+          </h2>
+          <BlacklistTable
+            records={blacklistRecords}
+            searchTerm={tableSearchTerm}
+            setSearchTerm={setTableSearchTerm}
+          />
+        </div>
+      </div>
     </div>
   );
 }

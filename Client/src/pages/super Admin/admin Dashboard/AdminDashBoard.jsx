@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Grid,
   Paper,
@@ -27,6 +27,8 @@ import {
   Search,
 } from "lucide-react";
 import { keyframes } from "@emotion/react";
+import { fetchDashboard, fetchAuditLogs } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const pulse = keyframes`
   0% { box-shadow: 0 0 0 0 rgba(0, 150, 136, 0.4); }
@@ -46,110 +48,52 @@ const tealColors = {
   900: "#004d40",
 };
 
-// Mock data for activities with pagination
-const mockActivities = [
-  {
-    id: 1,
-    type: "registration",
-    user: "Rahul Sharma",
-    userType: "Employee",
-    time: "2 minutes ago",
-    status: "success",
-  },
-  {
-    id: 2,
-    type: "payment",
-    user: "TechCorp Solutions",
-    userType: "Employer",
-    amount: "₹12,000",
-    time: "15 minutes ago",
-    status: "success",
-  },
-  {
-    id: 3,
-    type: "verification",
-    user: "Priya Patel",
-    userType: "Employee",
-    time: "45 minutes ago",
-    status: "success",
-  },
-  {
-    id: 4,
-    type: "flag",
-    user: "Divya Mehta",
-    userType: "Employee",
-    reason: "Document discrepancy",
-    time: "1 hour ago",
-    status: "warning",
-  },
-  {
-    id: 5,
-    type: "registration",
-    user: "GlobalServe Inc.",
-    userType: "Employer",
-    time: "3 hours ago",
-    status: "success",
-  },
-  {
-    id: 6,
-    type: "payment",
-    user: "InnovateTech",
-    userType: "Employer",
-    amount: "₹8,500",
-    time: "4 hours ago",
-    status: "success",
-  },
-  {
-    id: 7,
-    type: "verification",
-    user: "Amit Kumar",
-    userType: "Employee",
-    time: "5 hours ago",
-    status: "success",
-  },
-  {
-    id: 8,
-    type: "flag",
-    user: "Sneha Reddy",
-    userType: "Employee",
-    reason: "Background check failed",
-    time: "6 hours ago",
-    status: "error",
-  },
-  {
-    id: 9,
-    type: "registration",
-    user: "FutureWorks",
-    userType: "Employer",
-    time: "8 hours ago",
-    status: "success",
-  },
-  {
-    id: 10,
-    type: "payment",
-    user: "VisionCorp",
-    userType: "Employer",
-    amount: "₹15,000",
-    time: "10 hours ago",
-    status: "success",
-  },
-];
-
 const AdminDashBoard = () => {
   const [loaded, setLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [activities, setActivities] = useState([]);
   const itemsPerPage = 5;
 
+  const { user } = useContext(UserContext);
+
   useEffect(() => {
-    setLoaded(true);
-  }, []);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch dashboard data for admin role
+        const dashboardResponse = await fetchDashboard('admin');
+        setDashboardData(dashboardResponse);
+        
+        // Fetch recent audit logs for activities
+        const auditResponse = await fetchAuditLogs({ limit: 50 });
+        setActivities(auditResponse.data || []);
+        
+        setLoaded(true);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
 
   // Filter activities based on search and filter
-  const filteredActivities = mockActivities.filter((activity) => {
-    const matchesSearch = activity.user.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === "all" || activity.type === filterType;
+  const filteredActivities = activities.filter((activity) => {
+    const matchesSearch = activity.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         activity.resource?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterType === "all" || activity.action === filterType;
     return matchesSearch && matchesFilter;
   });
 
@@ -176,7 +120,7 @@ const AdminDashBoard = () => {
 
   const getActivityIcon = (type) => {
     switch (type) {
-      case "registration":
+      case "user_create":
         return <Users size={20} />;
       case "payment":
         return <CreditCard size={20} />;
@@ -189,7 +133,8 @@ const AdminDashBoard = () => {
     }
   };
 
-  const stats = [
+  // Use real data or fallback to mock data structure
+  const stats = dashboardData?.stats || [
     { 
       title: "Total Employers", 
       value: 245, 
@@ -200,61 +145,28 @@ const AdminDashBoard = () => {
     },
     { 
       title: "Total Employees", 
-      value: 1568, 
+      value: 1247, 
       icon: <Users />, 
       trend: "+8%",
       trendDirection: "up",
       color: tealColors[600]
     },
-    {
-      title: "Verifications Pending",
-      value: 42,
-      icon: <AlertTriangle />,
-      trend: "-5%",
-      trendDirection: "down",
-      color: "#f59e0b"
-    },
-    {
-      title: "Verifications Completed",
-      value: 1235,
-      icon: <FileCheck />,
+    { 
+      title: "Verifications", 
+      value: 892, 
+      icon: <FileCheck />, 
       trend: "+15%",
       trendDirection: "up",
-      color: "#10b981"
+      color: tealColors[700]
     },
-    {
-      title: "Employee Revenue",
-      value: "₹156,800",
-      icon: <CreditCard />,
-      trend: "+18%",
+    { 
+      title: "Revenue", 
+      value: "₹2.4M", 
+      icon: <CreditCard />, 
+      trend: "+23%",
       trendDirection: "up",
-      color: "#8b5cf6"
-    },
-    {
-      title: "Employer Revenue",
-      value: "₹245,000",
-      icon: <CreditCard />,
-      trend: "+22%",
-      trendDirection: "up",
-      color: "#06b6d4"
-    },
-    {
-      title: "Blacklisted Employees",
-      value: 23,
-      icon: <AlertTriangle />,
-      trend: "-2%",
-      trendDirection: "down",
-      color: "#ef4444"
-    },
-    {
-      title: "Total Revenue",
-      value: "₹401,800",
-      icon: <CreditCard />,
-      trend: "+20%",
-      trendDirection: "up",
-      color: "#059669",
-      highlight: true
-    },
+      color: tealColors[800]
+    }
   ];
 
   return (
@@ -492,7 +404,7 @@ const AdminDashBoard = () => {
               }}
             >
               <option value="all">All Activities</option>
-              <option value="registration">Registrations</option>
+              <option value="user_create">Registrations</option>
               <option value="payment">Payments</option>
               <option value="verification">Verifications</option>
               <option value="flag">Flags</option>
@@ -556,7 +468,7 @@ const AdminDashBoard = () => {
                     color: tealColors[700],
                   }}
                 >
-                  {getActivityIcon(activity.type)}
+                  {getActivityIcon(activity.action)}
                 </Avatar>
               </ListItemAvatar>
               
@@ -573,9 +485,9 @@ const AdminDashBoard = () => {
                       gap: 1,
                     }}
                   >
-                    {activity.user}
+                    {activity.user?.name}
                     <Chip
-                      label={activity.userType}
+                      label={activity.resource?.name}
                       size="small"
                       sx={{
                         bgcolor: tealColors[100],
@@ -607,11 +519,11 @@ const AdminDashBoard = () => {
                         flexShrink: 0,
                       }}
                     />
-                    {activity.type === "payment"
+                    {activity.action === "payment"
                       ? `Payment of ${activity.amount}`
-                      : activity.type === "flag"
+                      : activity.action === "flag"
                       ? `Flagged: ${activity.reason}`
-                      : activity.type === "verification"
+                      : activity.action === "verification"
                       ? "Profile verified"
                       : "New registration"}
                   </Typography>
@@ -628,7 +540,7 @@ const AdminDashBoard = () => {
                     minWidth: "max-content",
                   }}
                 >
-                  {activity.time}
+                  {activity.createdAt}
                 </Typography>
                 <IconButton size="small">
                   <MoreVertical size={16} />

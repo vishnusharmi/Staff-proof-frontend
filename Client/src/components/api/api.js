@@ -1,575 +1,579 @@
 // src/api/api.js
-import axios from "axios";
+import api from './axiosConfig';
 import { v4 as uuidv4 } from "uuid";
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // Profile Functions
 export const fetchProfile = async () => {
-  await delay(300);
-  return {
-    id: 1,
-    fullName: "John Doe",
-    email: "john@example.com",
-    phone: "9876543210",
-    dob: "1990-01-15",
-    pan: "ABCDE1234F",
-    aadhaar: "234567890123",
-    qualification: "B.Tech Computer Science",
-    experience: 5,
-    canEdit: false,
-    staffProofId: `SP-${Math.floor(1000000 + Math.random() * 9000000)}`,
-  };
+  const res = await api.get('/api/users/profile', { withCredentials: true });
+  return res.data;
 };
 
 export const updateProfile = async (data) => {
-  await delay(300);
-  return {
-    success: true,
-    profile: {
-      ...data,
-      verificationStatus: "pending",
-      lastUpdated: new Date().toISOString(),
-      status: "Under Review",
-    },
-  };
+  const res = await api.put('/api/users/profile', data, { withCredentials: true });
+  return res.data;
 };
 
-// Job History Functions
+// Job History Functions - Updated to use real API
 export const fetchJobHistory = async () => {
-  await delay(300);
-  return [
-    {
-      id: 1,
-      company: "Tech Innovators",
-      designation: "Senior Developer",
-      startDate: "2020-03-01",
-      endDate: null,
-      currentlyWorking: true,
-      status: "Verified",
-      documents: {
-        offerLetter: [{ name: "offer_tech.pdf", verified: true }],
-        relievingLetter: [],
-        payslips: [{ name: "payslips_tech.zip", verified: true }],
-      },
-    },
-    {
-      id: 2,
-      company: "Digital Solutions",
-      designation: "Frontend Lead",
-      startDate: "2018-06-01",
-      endDate: "2020-02-28",
-      currentlyWorking: false,
-      status: "Pending",
-      documents: {
-        offerLetter: [{ name: "offer_digital.pdf", verified: false }],
-        relievingLetter: [{ name: "relieving_digital.pdf", verified: false }],
-        payslips: [{ name: "payslips_2020.zip", verified: true }],
-      },
-    },
-  ];
+  const res = await api.get('/api/users/job-history', { withCredentials: true });
+  return res.data;
 };
 
-export const addJobRecord = async (formData) => {
-  await delay(300);
-  return {
-    id: Date.now(),
-    company: formData.get("company"),
-    designation: formData.get("designation"),
-    startDate: formData.get("startDate"),
-    endDate: formData.get("endDate"),
-    currentlyWorking: formData.get("currentlyWorking") === "true",
-    status: "Pending",
-    verificationStatus: "under_review",
-    documents: {
-      offerLetter: Array.from(formData.getAll("offerLetter")).map((f) => ({
-        name: f.name,
-        verified: false,
-      })),
-      relievingLetter: Array.from(formData.getAll("relievingLetter")).map(
-        (f) => ({
-          name: f.name,
-          verified: false,
-        })
-      ),
-      payslips: Array.from(formData.getAll("payslips")).map((f) => ({
-        name: f.name,
-        verified: false,
-      })),
-    },
-  };
+export const addJobRecord = async (jobData) => {
+  const res = await api.post('/api/users/job-history', jobData, { withCredentials: true });
+  return res.data;
 };
 
 export const deleteJobRecord = async (id) => {
-  await delay(300);
-  return {
-    success: true,
-    deletedId: id,
-    message: `Record ${id} deleted successfully`,
-    newJobList: [], // This should be implemented properly in real backend
-  };
+  const res = await api.delete(`/api/users/job-history/${id}`, { withCredentials: true });
+  return res.data;
 };
 
-// Document Center Functions
+// Document Center Functions - Updated to use real API
 export const fetchDocuments = async () => {
-  await delay(300);
-  return {
-    identity: [
-      { id: 1, name: "aadhaar_front.jpg", verified: true, date: "2024-03-15" },
-      { id: 2, name: "aadhaar_back.jpg", verified: true, date: "2024-03-15" },
-      { id: 3, name: "pan_card.pdf", verified: true, date: "2024-03-15" },
-    ],
-    education: [
-      {
-        id: 4,
-        name: "degree_certificate.pdf",
-        verified: true,
-        date: "2024-03-15",
-      },
-      { id: 5, name: "marksheet_2020.pdf", verified: true, date: "2024-03-15" },
-    ],
-    resume: [
-      { id: 6, name: "latest_resume.pdf", verified: true, date: "2024-03-15" },
-    ],
-  };
+  const res = await api.get('/api/users/documents', { withCredentials: true });
+  return res.data;
 };
 
 export const uploadDocument = async (formData) => {
-  await delay(300);
-  const fileType = formData.get("type");
-  const newDocument = {
-    id: Date.now(),
-    name: formData.get("file").name,
-    verified: false,
-    date: new Date().toISOString(),
-  };
+  const res = await api.post('/api/users/documents/upload', formData, { 
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return res.data;
+};
 
-  // Simulate different document sections
-  if (fileType === "resume") {
-    return { ...newDocument, section: "resume" };
-  }
-  if (fileType === "educational") {
-    return { ...newDocument, section: "education" };
-  }
-  return { ...newDocument, section: "identity" };
+export const deleteDocument = async (docId) => {
+  const res = await api.delete(`/api/users/documents/${docId}`, { withCredentials: true });
+  return res.data;
+};
+
+export const fetchDocumentContent = async (docId) => {
+  const res = await api.get(`/api/users/documents/${docId}/content`, { withCredentials: true });
+  return res.data;
 };
 
 // fatcing dashboard functions
-
-export const fetchDashboard = async () => {
-  await delay(300);
-  return {
-    totalEmployees: 145,
-    pendingApprovals: 5,
-    messages: 3,
-    recentActivities: [
-      { message: "Profile updated", date: "2024-03-15 14:30" },
-      { message: "Document uploaded: PAN Card", date: "2024-03-15 10:15" },
-    ],
-    notifications: [
-      {
-        type: "warning",
-        message: "Complete KYC verification",
-        date: "2024-03-14",
-      },
-      {
-        type: "error",
-        message: "Payment failed for Add-on",
-        date: "2024-03-13",
-      },
-    ],
-  };
+export const fetchDashboard = async (role = 'employee') => {
+  const res = await api.get(`/api/dashboard/${role}`, { withCredentials: true });
+  return res.data;
 };
 
-// Access Control Functions
-export const fetchAccessRequests = async () => {
-  await delay(300);
-  return [
-    {
-      id: 1,
-      employer: {
-        id: 101,
-        name: "Tech Corp Ltd",
-        email: "hr@techcorp.com",
-      },
-      requestedDocs: ["PAN Card", "Aadhaar Front"],
-      requestDate: "2024-03-15",
-      expiryDate: "2024-04-15",
-      status: "pending",
-      accessLogs: [],
-    },
-    {
-      id: 2,
-      employer: {
-        id: 102,
-        name: "Digital Solutions",
-        email: "admin@digitalsol.com",
-      },
-      requestedDocs: ["Resume", "Experience Letter"],
-      requestDate: "2024-03-10",
-      expiryDate: "2024-04-10",
-      status: "accepted",
-      accessLogs: [
-        {
-          timestamp: "2024-03-12T14:30:00",
-          action: "viewed",
-          ip: "203.0.113.45",
-          document: "Resume",
-        },
-      ],
-    },
-  ];
+// Access Control Functions - Updated to use real API
+export const fetchAccessRequests = async (params = {}) => {
+  const res = await api.get('/api/access-requests', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
 };
 
 export const updateAccessRequest = async (requestId, action) => {
-  await delay(300);
-  return {
-    id: requestId,
-    status: action,
-    updatedAt: new Date().toISOString(),
-  };
+  if (action === 'approve') {
+    const res = await api.post(`/api/access-requests/${requestId}/approve`, {}, { withCredentials: true });
+    return res.data;
+  } else if (action === 'deny') {
+    const res = await api.post(`/api/access-requests/${requestId}/deny`, {}, { withCredentials: true });
+    return res.data;
+  } else if (action === 'delete') {
+    const res = await api.delete(`/api/access-requests/${requestId}`, { withCredentials: true });
+    return res.data;
+  }
 };
 
-// Add-Ons Functions
+// Add-Ons Functions - Updated to use real API
 export const fetchAddOns = async () => {
-  await delay(300);
-  return [
-    {
-      id: 1,
-      name: "Profile Editing",
-      price: 299,
-      description: "Unlock profile editing capabilities",
-      features: [
-        "Edit personal information",
-        "Update contact details",
-        "Modify employment history",
-      ],
-      billingCycle: "year",
-      featured: true,
-    },
-    {
-      id: 2,
-      name: "Priority Verification",
-      price: 499,
-      description: "Fast-track document verification",
-      features: ["24-hour verification", "Priority support", "Status updates"],
-      billingCycle: "case",
-    },
-    {
-      id: 3,
-      name: "Advanced Security",
-      price: 199,
-      description: "Enhanced security features",
-      features: ["2FA protection", "Access logs", "Device management"],
-      billingCycle: "month",
-    },
-  ];
+  const res = await api.get('/api/addons', { withCredentials: true });
+  return res.data;
 };
 
 export const purchaseAddOn = async (addOnId) => {
-  await delay(500);
-  return {
-    success: true,
-    invoice: {
-      id: `INV-${Math.floor(Math.random() * 1000000)}`,
-      date: new Date().toISOString(),
-      item: "Profile Editing Package",
-      amount: 299,
-      features: [
-        "Edit personal information",
-        "Update contact details",
-        "Modify employment history",
-      ],
-    },
-  };
+  const res = await api.post('/api/addons/purchase', { addOnId }, { withCredentials: true });
+  return res.data;
 };
 
-// Billing Functions
-// export const fetchBilling = async () => {
-//   await delay(300);
-//   return [
-//     {
-//       id: 1,
-//       invoiceNumber: 'INV-2023-001',
-//       date: '2023-05-15',
-//       amount: 299,
-//       paymentMethod: 'Visa **** 4242',
-//       status: 'paid'
-//     },
-//     {
-//       id: 2,
-//       invoiceNumber: 'INV-2023-002',
-//       date: '2023-06-01',
-//       amount: 499,
-//       paymentMethod: 'Mastercard **** 5678',
-//       status: 'pending'
-//     },
-//     {
-//       id: 3,
-//       invoiceNumber: 'INV-2023-003',
-//       date: '2023-06-15',
-//       amount: 199,
-//       paymentMethod: 'PayPal',
-//       status: 'failed'
-//     }
-//   ];
-// };
+// Billing Functions - Updated to use real API
+export const fetchBillingHistory = async (params = {}) => {
+  const res = await api.get('/api/billing/history', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
 
 export const fetchPaymentMethods = async () => {
-  await delay(300);
-  return [
-    {
-      id: 1,
-      brand: "visa",
-      last4: "4242",
-      exp_month: "12",
-      exp_year: "2025",
-    },
-  ];
+  const res = await api.get('/api/users/payment-methods', { withCredentials: true });
+  return res.data;
 };
 
 export const downloadInvoice = async (invoiceId) => {
-  await delay(300);
-  return { success: true };
+  const res = await api.get(`/api/billing/${invoiceId}/download`, { 
+    withCredentials: true,
+    responseType: 'blob'
+  });
+  return res.data;
 };
 
-// Notification Functions
-export const fetchNotifications = async () => {
-  await delay(300);
-  return [
-    {
-      id: 1,
-      type: "document",
-      message: "Your PAN card has been verified",
-      date: "2023-05-15 14:30",
-      read: false,
-    },
-    {
-      id: 2,
-      type: "payment",
-      message: "Payment failed for Add-on purchase",
-      date: "2023-06-01 09:15",
-      read: true,
-    },
-    {
-      id: 3,
-      type: "security",
-      message: "New login detected from unknown device",
-      date: "2023-06-15 18:45",
-      read: false,
-    },
-  ];
+// Notification Functions - Updated to use real API
+export const fetchNotifications = async (params = {}) => {
+  const res = await api.get('/api/notifications', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
 };
 
 export const markNotificationRead = async (id) => {
-  await delay(100);
-  return { success: true, id };
+  const res = await api.put(`/api/notifications/${id}/read`, {}, { withCredentials: true });
+  return res.data;
 };
 
-// src/Dashboard/api/api.js
-// Mock database of billing records
-let billingRecords = [
-  {
-    id: "inv_1",
-    user: "John Doe",
-    user_type: "Employee",
-    service: "Premium Subscription",
-    amount: 29.99,
-    date: "2023-10-15T08:30:00Z",
-    status: "Completed",
-  },
-  {
-    id: "inv_2",
-    user: "Acme Corp",
-    user_type: "Employer",
-    service: "Enterprise Plan",
-    amount: 299.99,
-    date: "2023-10-18T14:22:00Z",
-    status: "Pending",
-  },
-  {
-    id: "inv_3",
-    user: "Jane Smith",
-    user_type: "Employee",
-    service: "Profile Highlight",
-    amount: 9.99,
-    date: "2023-10-20T11:05:00Z",
-    status: "Completed",
-  },
-  {
-    id: "inv_4",
-    user: "Tech Solutions",
-    user_type: "Employer",
-    service: "Job Posting",
-    amount: 199.99,
-    date: "2023-10-22T09:45:00Z",
-    status: "Failed",
-  },
-  {
-    id: "inv_5",
-    user: "Mike Johnson",
-    user_type: "Employee",
-    service: "Resume Badge",
-    amount: 4.99,
-    date: "2023-10-25T16:30:00Z",
-    status: "Refunded",
-  },
-];
-
-// Simulate API delay
-const simulateNetwork = () =>
-  new Promise((resolve) => setTimeout(resolve, Math.random() * 500 + 100));
-
-// Generate unique token
-const generateToken = () => {
-  return (
-    "mock-token-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9)
-  );
+export const deleteNotification = async (id) => {
+  const res = await api.delete(`/api/notifications/${id}`, { withCredentials: true });
+  return res.data;
 };
 
-// Fetch billing records with filtering and pagination
-export const fetchBilling = async (params = {}) => {
-  await simulateNetwork();
-
-  const {
-    search = "",
-    status = "",
-    userType = "",
-    serviceType = "",
-    startDate = "",
-    endDate = "",
-    page = 1,
-    limit = 5,
-  } = params;
-
-  // Filter records
-  let filtered = billingRecords.filter((record) => {
-    const matchesSearch =
-      record.user.toLowerCase().includes(search.toLowerCase()) ||
-      record.id.toLowerCase().includes(search.toLowerCase());
-
-    const matchesStatus = status ? record.status === status : true;
-    const matchesUserType = userType ? record.user_type === userType : true;
-    const matchesServiceType = serviceType
-      ? record.service === serviceType
-      : true;
-
-    const recordDate = new Date(record.date);
-    const matchesStartDate = startDate
-      ? recordDate >= new Date(startDate)
-      : true;
-    const matchesEndDate = endDate
-      ? recordDate <= new Date(endDate + "T23:59:59Z")
-      : true;
-
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesUserType &&
-      matchesServiceType &&
-      matchesStartDate &&
-      matchesEndDate
-    );
-  });
-
-  // Apply pagination
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / limit);
-  const paginated = filtered.slice((page - 1) * limit, page * limit);
-
-  return {
-    data: paginated,
-    total,
-    totalPages,
-  };
+// Settings Functions
+export const updateSettings = async (settingsData) => {
+  const res = await api.put('/api/users/settings', settingsData, { withCredentials: true });
+  return res.data;
 };
 
-// Generate invoice PDF
+export const changePassword = async (passwordData) => {
+  const res = await api.put('/api/users/change-password', passwordData, { withCredentials: true });
+  return res.data;
+};
+
+export const updateEmail = async (emailData) => {
+  const res = await api.put('/api/users/change-email', emailData, { withCredentials: true });
+  return res.data;
+};
+
+export const fetchConnectedDevices = async () => {
+  const res = await api.get('/api/users/devices', { withCredentials: true });
+  return res.data;
+};
+
+export const revokeDevice = async (deviceId) => {
+  const res = await api.delete(`/api/users/devices/${deviceId}`, { withCredentials: true });
+  return res.data;
+};
+
+export const enableTwoFactor = async () => {
+  const res = await api.post('/api/users/2fa/enable', {}, { withCredentials: true });
+  return res.data;
+};
+
+export const disableTwoFactor = async () => {
+  const res = await api.post('/api/users/2fa/disable', {}, { withCredentials: true });
+  return res.data;
+};
+
+// Additional billing functions for real API
 export const generateInvoice = async (id) => {
-  await simulateNetwork();
-
-  const record = billingRecords.find((r) => r.id === id);
-  if (!record) {
-    throw new Error("Billing record not found");
-  }
-
-  if (record.status !== "Completed") {
-    throw new Error("Invoice can only be generated for completed payments");
-  }
-
-  // Generate unique token without UUID dependency
-  const token = generateToken();
-  return {
-    url: `https://api.example.com/invoices/${id}.pdf?token=${token}`,
-    filename: `invoice_${id}.pdf`,
-  };
+  const res = await api.get(`/api/billing/${id}/generate-invoice`, { withCredentials: true });
+  return res.data;
 };
 
-// Process refund
 export const refundBilling = async (id) => {
-  await simulateNetwork();
-
-  const recordIndex = billingRecords.findIndex((r) => r.id === id);
-  if (recordIndex === -1) {
-    throw new Error("Billing record not found");
-  }
-
-  if (billingRecords[recordIndex].status !== "Completed") {
-    throw new Error("Only completed payments can be refunded");
-  }
-
-  // Update record
-  billingRecords[recordIndex] = {
-    ...billingRecords[recordIndex],
-    status: "Refunded",
-    refundDate: new Date().toISOString(),
-  };
-
-  return { success: true };
+  const res = await api.post(`/api/billing/${id}/refund`, {}, { withCredentials: true });
+  return res.data;
 };
 
-// Adjust payment amount
 export const adjustBilling = async (id, newAmount) => {
-  await simulateNetwork();
-
-  if (isNaN(newAmount) || newAmount <= 0) {
-    throw new Error("Invalid amount. Must be a positive number");
-  }
-
-  const recordIndex = billingRecords.findIndex((r) => r.id === id);
-  if (recordIndex === -1) {
-    throw new Error("Billing record not found");
-  }
-
-  if (billingRecords[recordIndex].status !== "Completed") {
-    throw new Error("Only completed payments can be adjusted");
-  }
-
-  // Calculate difference
-  const originalAmount = billingRecords[recordIndex].amount;
-  const adjustment = newAmount - originalAmount;
-
-  // Update record
-  billingRecords[recordIndex] = {
-    ...billingRecords[recordIndex],
-    amount: newAmount,
-    adjustments: [
-      ...(billingRecords[recordIndex].adjustments || []),
-      {
-        date: new Date().toISOString(),
-        originalAmount,
-        newAmount,
-        difference: adjustment,
-      },
-    ],
-  };
-
-  return billingRecords[recordIndex];
+  const res = await api.put(`/api/billing/${id}/adjust`, { amount: newAmount }, { withCredentials: true });
+  return res.data;
 };
 
-// Utility function to reset mock data (for testing)
-export const resetMockData = () => {
-  billingRecords = [...initialRecords];
+// AUTH FUNCTIONS
+export const loginUser = async (email, password) => {
+  const res = await api.post('/api/auth/login', { email, password });
+  return res.data;
 };
 
-// Preserve initial state for resetting
-const initialRecords = [...billingRecords];
+export const registerUser = async (userData) => {
+  const res = await api.post('/api/auth/register', userData);
+  return res.data;
+};
+
+// COMPANY FUNCTIONS
+export const fetchCompanies = async (params = {}) => {
+  const res = await api.get('/api/companies', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+export const fetchCompany = async (id) => {
+  const res = await api.get(`/api/companies/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const createCompany = async (companyData) => {
+  const res = await api.post('/api/companies', companyData, { withCredentials: true });
+  return res.data;
+};
+
+export const updateCompany = async (id, companyData) => {
+  const res = await api.put(`/api/companies/${id}`, companyData, { withCredentials: true });
+  return res.data;
+};
+
+export const deleteCompany = async (id) => {
+  const res = await api.delete(`/api/companies/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+// VERIFICATION FUNCTIONS
+export const fetchVerifications = async (params = {}) => {
+  const res = await api.get('/api/verifications', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+export const fetchVerificationCase = async (id) => {
+  const res = await api.get(`/api/verifications/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const createVerification = async (verificationData) => {
+  const res = await api.post('/api/verifications', verificationData, { withCredentials: true });
+  return res.data;
+};
+
+export const updateCaseStatus = async (id, statusData) => {
+  const res = await api.put(`/api/verifications/${id}/status`, statusData, { withCredentials: true });
+  return res.data;
+};
+
+export const addCaseNote = async (noteData) => {
+  const res = await api.post('/api/verifications/notes', noteData, { withCredentials: true });
+  return res.data;
+};
+
+export const requestClarification = async (clarificationData) => {
+  const res = await api.post('/api/verifications/clarification', clarificationData, { withCredentials: true });
+  return res.data;
+};
+
+export const assignVerification = async (id, assignData) => {
+  const res = await api.post(`/api/verifications/${id}/assign`, assignData, { withCredentials: true });
+  return res.data;
+};
+
+export const completeVerification = async (id, completionData) => {
+  const res = await api.post(`/api/verifications/${id}/complete`, completionData, { withCredentials: true });
+  return res.data;
+};
+
+// ACCESS REQUEST FUNCTIONS
+export const fetchAccessRequest = async (id) => {
+  const res = await api.get(`/api/access-requests/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const createAccessRequest = async (requestData) => {
+  const res = await api.post('/api/access-requests', requestData, { withCredentials: true });
+  return res.data;
+};
+
+export const approveAccessRequest = async (id, approvalData) => {
+  const res = await api.post(`/api/access-requests/${id}/approve`, approvalData, { withCredentials: true });
+  return res.data;
+};
+
+export const denyAccessRequest = async (id, denialData) => {
+  const res = await api.post(`/api/access-requests/${id}/deny`, denialData, { withCredentials: true });
+  return res.data;
+};
+
+// BLACKLIST FUNCTIONS
+export const fetchBlacklist = async (params = {}) => {
+  const res = await api.get('/api/blacklist', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+export const fetchBlacklistEntry = async (id) => {
+  const res = await api.get(`/api/blacklist/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const addToBlacklist = async (blacklistData) => {
+  const res = await api.post('/api/blacklist', blacklistData, { withCredentials: true });
+  return res.data;
+};
+
+export const updateBlacklistEntry = async (id, blacklistData) => {
+  const res = await api.put(`/api/blacklist/${id}`, blacklistData, { withCredentials: true });
+  return res.data;
+};
+
+export const updateBlacklistStatus = async (id, statusData) => {
+  const res = await api.put(`/api/blacklist/${id}/status`, statusData, { withCredentials: true });
+  return res.data;
+};
+
+export const removeFromBlacklist = async (id) => {
+  const res = await api.delete(`/api/blacklist/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+// BILLING FUNCTIONS
+export const fetchBilling = async (params = {}) => {
+  const res = await api.get('/api/billing', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+export const fetchBillingRecord = async (id) => {
+  const res = await api.get(`/api/billing/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const createBillingRecord = async (billingData) => {
+  const res = await api.post('/api/billing', billingData, { withCredentials: true });
+  return res.data;
+};
+
+export const updateBillingRecord = async (id, billingData) => {
+  const res = await api.put(`/api/billing/${id}`, billingData, { withCredentials: true });
+  return res.data;
+};
+
+export const processPayment = async (id, paymentData) => {
+  const res = await api.post(`/api/billing/${id}/payment`, paymentData, { withCredentials: true });
+  return res.data;
+};
+
+// AUDIT LOGS FUNCTIONS
+export const fetchAuditLogs = async (params = {}) => {
+  const res = await api.get('/api/audit-logs', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+export const fetchAuditLog = async (id) => {
+  const res = await api.get(`/api/audit-logs/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const fetchUserAuditLogs = async (userId, params = {}) => {
+  const res = await api.get(`/api/users/${userId}/audit-logs`, { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+// EMPLOYEE MANAGEMENT FUNCTIONS
+export const fetchEmployees = async (params = {}) => {
+  const res = await api.get('/api/employees/employees', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+export const fetchEmployee = async (id) => {
+  const res = await api.get(`/api/employees/employees/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const createEmployee = async (employeeData) => {
+  const res = await api.post('/api/employees/employees', employeeData, { 
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return res.data;
+};
+
+export const updateEmployee = async (id, employeeData) => {
+  const res = await api.put(`/api/employees/employees/${id}`, employeeData, { 
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return res.data;
+};
+
+export const deleteEmployee = async (id) => {
+  const res = await api.delete(`/api/employees/employees/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const searchEmployees = async (params = {}) => {
+  const res = await api.get('/api/employees/employees/search', { 
+    params,
+    withCredentials: true 
+  });
+  return res.data;
+};
+
+export const fetchEmployeeStats = async () => {
+  const res = await api.get('/api/employees/employees/stats', { withCredentials: true });
+  return res.data;
+};
+
+export const updateEmployeeStatus = async (id, status) => {
+  const res = await api.put(`/api/employees/${id}/status`, { status }, { withCredentials: true });
+  return res.data;
+};
+
+// EMPLOYER FUNCTIONS
+export const searchEmployee = async (staffProofId) => {
+  const res = await api.get(`/api/employees/search/${staffProofId}`, { withCredentials: true });
+  return res.data;
+};
+
+export const requestAccess = async (accessData) => {
+  const res = await api.post('/api/access-requests', accessData, { withCredentials: true });
+  return res.data;
+};
+
+// EMPLOYER MANAGEMENT FUNCTIONS
+export const fetchEmployers = async (params = {}) => {
+  const res = await api.get('/api/employers', {
+    params,
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const updateEmployerKYC = async (id, kycData) => {
+  const res = await api.put(`/api/employers/${id}/kyc`, kycData, { withCredentials: true });
+  return res.data;
+};
+
+// CASE ASSIGNMENT FUNCTIONS
+export const fetchCaseAssignments = async (params = {}) => {
+  const res = await api.get('/api/case-assignments', {
+    params,
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const assignCase = async (caseId, assignData) => {
+  const res = await api.post(`/api/case-assignments/${caseId}/assign`, assignData, { withCredentials: true });
+  return res.data;
+};
+
+// EMPLOYEE/EMPLOYER DETAILS FUNCTIONS
+export const fetchEmployeeDetails = async (id) => {
+  const res = await api.get(`/api/employees/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+export const fetchEmployerDetails = async (id) => {
+  const res = await api.get(`/api/employers/${id}`, { withCredentials: true });
+  return res.data;
+};
+
+// Company Profile Functions
+export const fetchCompanyProfile = async () => {
+  const res = await api.get('/api/companies/profile', { withCredentials: true });
+  return res.data;
+};
+
+export const updateCompanyProfile = async (profileData) => {
+  const res = await api.put('/api/companies/profile', profileData, { withCredentials: true });
+  return res.data;
+};
+
+export const uploadCompanyDocument = async (formData) => {
+  const res = await api.post('/api/companies/documents/upload', formData, { 
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return res.data;
+};
+
+// VERIFIER FUNCTIONS
+export const fetchVerifierEmployees = async (search = "") => {
+  const res = await api.get('/api/verifier/communication/employees', {
+    params: search ? { search } : {},
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const fetchVerifierCompanies = async (search = "") => {
+  const res = await api.get('/api/verifier/communication/companies', {
+    params: search ? { search } : {},
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const fetchVerifierClarifications = async (params = {}) => {
+  const res = await api.get('/api/verifier/communication/clarifications', {
+    params,
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const sendVerifierClarification = async (clarificationData) => {
+  const res = await api.post('/api/verifier/communication/clarification', clarificationData, { withCredentials: true });
+  return res.data;
+};
+
+export const fetchVerifierCompanyCases = async (params = {}) => {
+  const res = await api.get('/api/verifier/companies/cases', {
+    params,
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const fetchVerifierEmployeeCases = async (params = {}) => {
+  const res = await api.get('/api/verifier/employees/cases', {
+    params,
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const updateVerifierCaseStatus = async (id, statusData) => {
+  const res = await api.put(`/api/verifier/cases/${id}/status`, statusData, { withCredentials: true });
+  return res.data;
+};
+
+export const fetchVerifierNotes = async (params = {}) => {
+  const res = await api.get('/api/verifier/notes', {
+    params,
+    withCredentials: true
+  });
+  return res.data;
+};
+
+export const addVerifierNote = async (noteData) => {
+  const res = await api.post('/api/verifier/notes', noteData, { withCredentials: true });
+  return res.data;
+};
+
+export const fetchVerifierActivity = async (params = {}) => {
+  const res = await api.get('/api/verifier/activity', {
+    params,
+    withCredentials: true
+  });
+  return res.data;
+};

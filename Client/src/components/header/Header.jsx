@@ -11,6 +11,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import { useContext } from "react";
 // import { AuthContext } from "../Context/Contextapi.jsx";
 import SidebarItems from "../SidebarItems/SidebarItems.jsx";
+import { NotificationBell } from "../NotificationSystem";
 
 const Header = () => {
 //   const { auth } = useContext(AuthContext);
@@ -104,7 +105,7 @@ const Header = () => {
         </div>
 
         <div className="relative flex items-center" ref={dropdownRef}>
-          <NotificationsIcon className="ml-2 cursor-pointer text-black" />
+          <NotificationBell />
           <button
             onClick={handleDropdown}
             className="hover:scale-[1.04] hover:bg-gray-200 font-bold text-black px-3 py-2 rounded-md cursor-pointer transition-all flex items-center justify-center gap-2"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   Paper, 
   Table, 
@@ -29,44 +29,8 @@ import {
   Delete,
   Visibility
 } from '@mui/icons-material';
-
-// Mock API functions - replace with real API calls
-const fetchDocuments = () => {
-  return Promise.resolve({
-    identity: [
-      { id: 1, name: 'Aadhaar Front.jpg', status: 'Verified', date: '2023-05-15', type: 'Identity' },
-      { id: 2, name: 'Aadhaar Back.jpg', status: 'Verified', date: '2023-05-15', type: 'Identity' },
-      { id: 3, name: 'PAN Card.pdf', status: 'Pending', date: '2023-05-20', type: 'Identity' }
-    ],
-    education: [
-      { id: 4, name: 'Bachelor Degree.pdf', status: 'Verified', date: '2023-04-10', type: 'Education' },
-      { id: 5, name: 'Marksheet.pdf', status: 'Rejected', date: '2023-05-01', type: 'Education' },
-      { id: 6, name: '12th Certificate.pdf', status: 'Pending', date: '2023-05-22', type: 'Education' }
-    ],
-    resume: [
-      { id: 7, name: 'My_Resume.pdf', status: 'Pending', date: '2023-05-25', type: 'Resume' }
-    ],
-    experience: [
-      { id: 8, name: 'Experience Letter 1.pdf', status: 'Verified', date: '2023-04-15', type: 'Experience' },
-      { id: 9, name: 'Experience Letter 2.pdf', status: 'Pending', date: '2023-05-18', type: 'Experience' },
-      { id: 10, name: 'Relieving Letter.pdf', status: 'Rejected', date: '2023-05-20', type: 'Experience' }
-    ]
-  });
-};
-
-const deleteDocument = (docId) => {
-  return Promise.resolve({ success: true });
-};
-
-// Mock function to fetch document content - replace with real API call
-const fetchDocumentContent = (docId) => {
-  return Promise.resolve({
-    id: docId,
-    content: 'This is a sample document content. In a real application, this would be the actual document content or a URL to view the document.',
-    url: 'https://example.com/document.pdf',
-    type: 'pdf'
-  });
-};
+import { fetchDocuments, deleteDocument, fetchDocumentContent } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const statusConfig = {
   Verified: { color: 'success', icon: <CheckCircle /> },
@@ -77,6 +41,7 @@ const statusConfig = {
 export default function DocumentCenter() {
   const [allDocuments, setAllDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, docId: null, docName: '' });
   const [viewDialog, setViewDialog] = useState({ open: false, doc: null, content: null, loading: false });
@@ -85,23 +50,27 @@ export default function DocumentCenter() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const { user } = useContext(UserContext);
+
   useEffect(() => {
     const loadDocuments = async () => {
       try {
         setLoading(true);
+        setError(null);
         const data = await fetchDocuments();
         
         // Flatten all documents into a single array
         const flattenedDocs = [
-          ...data.identity,
-          ...data.education,
-          ...data.resume,
-          ...data.experience
+          ...(data.identity || []),
+          ...(data.education || []),
+          ...(data.resume || []),
+          ...(data.experience || [])
         ];
         
         setAllDocuments(flattenedDocs);
-      } catch (error) {
-        console.error('Error loading documents:', error);
+      } catch (err) {
+        console.error('Error loading documents:', err);
+        setError(err.response?.data?.message || 'Failed to load documents');
         setSnackbar({ 
           open: true, 
           message: 'Failed to load documents', 
@@ -112,8 +81,10 @@ export default function DocumentCenter() {
       }
     };
     
-    loadDocuments();
-  }, []);
+    if (user) {
+      loadDocuments();
+    }
+  }, [user]);
 
   const handleDeleteClick = (doc) => {
     setDeleteDialog({
@@ -129,11 +100,11 @@ export default function DocumentCenter() {
     try {
       const content = await fetchDocumentContent(doc.id);
       setViewDialog(prev => ({ ...prev, content, loading: false }));
-    } catch (error) {
-      console.error('Error loading document content:', error);
+    } catch (err) {
+      console.error('Error loading document content:', err);
       setSnackbar({ 
         open: true, 
-        message: 'Failed to load document content', 
+        message: err.response?.data?.message || 'Failed to load document content', 
         severity: 'error' 
       });
       setViewDialog(prev => ({ ...prev, loading: false }));
@@ -164,10 +135,10 @@ export default function DocumentCenter() {
         message: 'Document deleted successfully', 
         severity: 'success' 
       });
-    } catch (error) {
+    } catch (err) {
       setSnackbar({ 
         open: true, 
-        message: 'Failed to delete document', 
+        message: err.response?.data?.message || 'Failed to delete document', 
         severity: 'error' 
       });
     } finally {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Users,
   UserCheck,
@@ -19,8 +19,12 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { fetchCaseAssignments, assignCase } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const CaseAssign = () => {
+  const [cases, setCases] = useState([]);
+  const [verifiers, setVerifiers] = useState([]);
   const [selectedCases, setSelectedCases] = useState([]);
   const [selectedVerifier, setSelectedVerifier] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,202 +33,102 @@ const CaseAssign = () => {
   const [filterPriority, setFilterPriority] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCases, setTotalCases] = useState(0);
+  const { user } = useContext(UserContext);
 
-  // Mock data for cases
-  const cases = [
-    {
-      id: "SP001",
-      name: "John Doe",
-      email: "john@example.com",
-      type: "employee",
-      company: "Tech Corp",
-      registrationDate: "2024-01-15",
-      status: "unassigned",
-      documentsCount: 5,
-      verifier: null,
-      priority: "high",
-      daysWaiting: 3,
-    },
-    {
-      id: "SP002",
-      name: "Jane Smith",
-      email: "jane@example.com",
-      type: "employee",
-      company: "Digital Solutions",
-      registrationDate: "2024-01-16",
-      status: "assigned",
-      documentsCount: 4,
-      verifier: "Alice Johnson",
-      priority: "medium",
-      daysWaiting: 2,
-    },
-    {
-      id: "SP003",
-      name: "TechCorp Ltd",
-      email: "hr@techcorp.com",
-      type: "company",
-      company: "TechCorp Ltd",
-      registrationDate: "2024-01-14",
-      status: "in_verification",
-      documentsCount: 8,
-      verifier: "Bob Wilson",
-      priority: "low",
-      daysWaiting: 4,
-    },
-    {
-      id: "SP004",
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      type: "employee",
-      company: "StartupXYZ",
-      registrationDate: "2024-01-17",
-      status: "unassigned",
-      documentsCount: 3,
-      verifier: null,
-      priority: "high",
-      daysWaiting: 1,
-    },
-    {
-      id: "SP005",
-      name: "Mike Chen",
-      email: "mike@example.com",
-      type: "employee",
-      company: "Innovation Labs",
-      registrationDate: "2024-01-18",
-      status: "unassigned",
-      documentsCount: 6,
-      verifier: null,
-      priority: "medium",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP006",
-      name: "Lisa Wang",
-      email: "lisa@example.com",
-      type: "employee",
-      company: "Future Tech",
-      registrationDate: "2024-01-12",
-      status: "reassign_needed",
-      documentsCount: 7,
-      verifier: "Carol Davis",
-      priority: "high",
-      daysWaiting: 6,
-    },
-    // Additional mock data for better pagination demonstration
-    {
-      id: "SP007",
-      name: "Alex Turner",
-      email: "alex@example.com",
-      type: "employee",
-      company: "Web Solutions",
-      registrationDate: "2024-01-19",
-      status: "unassigned",
-      documentsCount: 4,
-      verifier: null,
-      priority: "medium",
-      daysWaiting: 1,
-    },
-    {
-      id: "SP008",
-      name: "Emma Wilson",
-      email: "emma@example.com",
-      type: "employee",
-      company: "Creative Agency",
-      registrationDate: "2024-01-20",
-      status: "assigned",
-      documentsCount: 5,
-      verifier: "David Brown",
-      priority: "low",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP009",
-      name: "Global Corp",
-      email: "admin@globalcorp.com",
-      type: "company",
-      company: "Global Corp",
-      registrationDate: "2024-01-13",
-      status: "in_verification",
-      documentsCount: 12,
-      verifier: "Alice Johnson",
-      priority: "high",
-      daysWaiting: 5,
-    },
-    {
-      id: "SP010",
-      name: "Tom Richards",
-      email: "tom@example.com",
-      type: "employee",
-      company: "Data Systems",
-      registrationDate: "2024-01-21",
-      status: "unassigned",
-      documentsCount: 3,
-      verifier: null,
-      priority: "medium",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP011",
-      name: "Sophie Martin",
-      email: "sophie@example.com",
-      type: "employee",
-      company: "Design Studio",
-      registrationDate: "2024-01-22",
-      status: "unassigned",
-      documentsCount: 6,
-      verifier: null,
-      priority: "high",
-      daysWaiting: 0,
-    },
-    {
-      id: "SP012",
-      name: "Innovation Inc",
-      email: "hr@innovation.com",
-      type: "company",
-      company: "Innovation Inc",
-      registrationDate: "2024-01-11",
-      status: "reassign_needed",
-      documentsCount: 9,
-      verifier: "Bob Wilson",
-      priority: "medium",
-      daysWaiting: 7,
-    },
-  ];
+  useEffect(() => {
+    const loadCases = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetchCaseAssignments({
+          page: currentPage,
+          limit: itemsPerPage,
+          search: searchTerm,
+          status: filterStatus,
+          userType: filterUserType,
+          priority: filterPriority
+        });
+        setCases(response.data || []);
+        setVerifiers(response.verifiers || []);
+        setTotalPages(response.pagination?.pages || 1);
+        setTotalCases(response.pagination?.total || 0);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load cases');
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user) {
+      loadCases();
+    }
+  }, [user, currentPage, searchTerm, filterStatus, filterUserType, filterPriority, itemsPerPage]);
 
-  const verifiers = [
-    {
-      id: "V001",
-      name: "Alice Johnson",
-      email: "alice@staffproof.com",
-      assignedCases: 12,
-      maxCapacity: 20,
-      activeStatus: "active",
-    },
-    {
-      id: "V002",
-      name: "Bob Wilson",
-      email: "bob@staffproof.com",
-      assignedCases: 18,
-      maxCapacity: 20,
-      activeStatus: "active",
-    },
-    {
-      id: "V003",
-      name: "Carol Davis",
-      email: "carol@staffproof.com",
-      assignedCases: 15,
-      maxCapacity: 25,
-      activeStatus: "active",
-    },
-    {
-      id: "V004",
-      name: "David Brown",
-      email: "david@staffproof.com",
-      assignedCases: 8,
-      maxCapacity: 15,
-      activeStatus: "active",
-    },
-  ];
+  const handleCaseSelection = (caseId) => {
+    setSelectedCases((prev) =>
+      prev.includes(caseId) ? prev.filter((id) => id !== caseId) : [...prev, caseId]
+    );
+  };
+
+  const handleSelectAllOnPage = (checked) => {
+    if (checked) {
+      setSelectedCases(cases.map((c) => c.id));
+    } else {
+      setSelectedCases([]);
+    }
+  };
+
+  const handleAssignCases = async () => {
+    if (!selectedVerifier || selectedCases.length === 0) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all(selectedCases.map((caseId) => assignCase(caseId, { verifierId: selectedVerifier })));
+      alert('Cases assigned successfully');
+      setSelectedCases([]);
+      // Reload cases
+      const response = await fetchCaseAssignments({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm,
+        status: filterStatus,
+        userType: filterUserType,
+        priority: filterPriority
+      });
+      setCases(response.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to assign cases');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReassignCase = async (caseId) => {
+    if (!selectedVerifier) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await assignCase(caseId, { verifierId: selectedVerifier });
+      alert('Case reassigned successfully');
+      // Reload cases
+      const response = await fetchCaseAssignments({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm,
+        status: filterStatus,
+        userType: filterUserType,
+        priority: filterPriority
+      });
+      setCases(response.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reassign case');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const stats = {
     totalCases: cases.length,
@@ -280,8 +184,8 @@ const CaseAssign = () => {
   const filteredCases = useMemo(() => {
     return cases.filter((caseItem) => {
       const matchesSearch =
-        caseItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        caseItem.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        caseItem.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         caseItem.id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus =
         filterStatus === "all" || caseItem.status === filterStatus;
@@ -299,65 +203,10 @@ const CaseAssign = () => {
     return filteredCases.slice(startIndex, endIndex);
   }, [filteredCases, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredCases.length / itemsPerPage);
-
   // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus, filterUserType, filterPriority, itemsPerPage]);
-
-  const handleCaseSelection = (caseId) => {
-    setSelectedCases((prev) =>
-      prev.includes(caseId)
-        ? prev.filter((id) => id !== caseId)
-        : [...prev, caseId]
-    );
-  };
-
-  const handleSelectAllOnPage = (checked) => {
-    if (checked) {
-      const pageIds = paginatedCases.map((c) => c.id);
-      setSelectedCases((prev) => [...new Set([...prev, ...pageIds])]);
-    } else {
-      const pageIds = paginatedCases.map((c) => c.id);
-      setSelectedCases((prev) => prev.filter((id) => !pageIds.includes(id)));
-    }
-  };
-
-  const handleAssignCases = () => {
-    if (selectedCases.length > 0 && selectedVerifier) {
-      const verifierName = verifiers.find(
-        (v) => v.id === selectedVerifier
-      )?.name;
-      alert(
-        `Successfully assigned ${selectedCases.length} cases to ${verifierName}`
-      );
-      setSelectedCases([]);
-      setSelectedVerifier("");
-    }
-  };
-
-  const handleReassignCase = (caseId) => {
-    setSelectedCases([caseId]);
-  };
-
-  const getVerifierWorkload = (verifierId) => {
-    const verifier = verifiers.find((v) => v.id === verifierId);
-    if (!verifier) return "";
-    const percentage = Math.round(
-      (verifier.assignedCases / verifier.maxCapacity) * 100
-    );
-    return `${percentage}%`;
-  };
-
-  const getVerifierWorkloadColor = (verifierId) => {
-    const verifier = verifiers.find((v) => v.id === verifierId);
-    if (!verifier) return "text-gray-500";
-    const percentage = (verifier.assignedCases / verifier.maxCapacity) * 100;
-    if (percentage >= 90) return "text-red-600";
-    if (percentage >= 70) return "text-yellow-600";
-    return "text-green-600";
-  };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -720,7 +569,7 @@ const CaseAssign = () => {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {caseItem.name}
+                            {`${caseItem.firstName} ${caseItem.lastName}`}
                           </div>
                           <div className="text-sm text-gray-500">
                             {caseItem.email}

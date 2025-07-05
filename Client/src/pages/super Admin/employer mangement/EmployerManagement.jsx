@@ -1,45 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdVisibility } from "react-icons/md";
-
-// Static data
-const staticEmployers = [
-  {
-    id: "EMP001",
-    name: "TechCorp Inc.",
-    email: "contact@techcorp.com",
-    registration_date: "2025-01-10T09:00:00Z",
-    kyc_status: "Pending",
-  },
-  {
-    id: "EMP002",
-    name: "Global Solutions Ltd.",
-    email: "info@globalsolutions.com",
-    registration_date: "2025-02-15T14:30:00Z",
-    kyc_status: "Verified",
-  },
-  {
-    id: "EMP003",
-    name: "Innovate LLC",
-    email: "support@innovatellc.com",
-    registration_date: "2025-03-20T11:45:00Z",
-    kyc_status: "Rejected",
-  },
-  {
-    id: "EMP004",
-    name: "Future Enterprises",
-    email: "admin@futureenterprises.com",
-    registration_date: "2025-04-05T16:20:00Z",
-    kyc_status: "Pending",
-  },
-  {
-    id: "EMP005",
-    name: "Visionary Co.",
-    email: "hr@visionaryco.com",
-    registration_date: "2025-05-01T10:10:00Z",
-    kyc_status: "Verified",
-  },
-];
+import { fetchEmployers, updateEmployerKYC } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const EmployerManagement = () => {
   const [employers, setEmployers] = useState([]);
@@ -48,41 +11,43 @@ const EmployerManagement = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEmployers, setTotalEmployers] = useState(0);
   const itemsPerPage = 5;
   const navigate = useNavigate();
+  const { user } = useContext(UserContext);
 
-  const loadEmployers = () => {
+  const loadEmployers = async () => {
     setLoading(true);
+    setError(null);
     try {
-      let filteredEmployers = staticEmployers;
-      if (search) {
-        filteredEmployers = filteredEmployers.filter(
-          (employer) =>
-            employer.name.toLowerCase().includes(search.toLowerCase()) ||
-            employer.email.toLowerCase().includes(search.toLowerCase())
-        );
-      }
-      if (kycFilter) {
-        filteredEmployers = filteredEmployers.filter(
-          (employer) => employer.kyc_status === kycFilter
-        );
-      }
-      setEmployers(filteredEmployers);
+      const response = await fetchEmployers({
+        page,
+        limit: itemsPerPage,
+        search,
+        kycStatus: kycFilter
+      });
+      setEmployers(response.data || []);
+      setTotalPages(response.pagination?.pages || 1);
+      setTotalEmployers(response.pagination?.total || 0);
     } catch (err) {
-      setError("Failed to load employers");
+      setError(err.response?.data?.message || "Failed to load employers");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadEmployers();
-  }, [search, kycFilter]);
+    if (user) {
+      loadEmployers();
+    }
+  }, [user, page, search, kycFilter]);
 
-  const handleApprove = (id, name) => {
+  const handleApprove = async (id, name) => {
     setLoading(true);
     setError(null);
     try {
+      await updateEmployerKYC(id, { kyc_status: "Verified" });
       setEmployers((prev) =>
         prev.map((employer) =>
           employer.id === id
@@ -98,10 +63,11 @@ const EmployerManagement = () => {
     }
   };
 
-  const handleReject = (id, name) => {
+  const handleReject = async (id, name) => {
     setLoading(true);
     setError(null);
     try {
+      await updateEmployerKYC(id, { kyc_status: "Rejected" });
       setEmployers((prev) =>
         prev.map((employer) =>
           employer.id === id
@@ -116,12 +82,6 @@ const EmployerManagement = () => {
       setLoading(false);
     }
   };
-
-  const filteredEmployers = employers;
-  const paginatedEmployers = filteredEmployers.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
 
   if (loading && !employers.length)
     return <div className="p-4">Loading...</div>;
@@ -178,9 +138,6 @@ const EmployerManagement = () => {
               <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                 Registration Date
               </th>
-              {/* <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                KYC Status
-              </th> */}
               <th className="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
                 View
               </th>
@@ -190,7 +147,7 @@ const EmployerManagement = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedEmployers.map((employer) => (
+            {employers.map((employer) => (
               <tr key={employer.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
                   {employer.id}
@@ -202,135 +159,97 @@ const EmployerManagement = () => {
                   {employer.email}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                  {new Date(employer.registration_date).toLocaleDateString()}
+                  {new Date(employer.createdAt).toLocaleDateString()}
                 </td>
-                {/* <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                  {employer.kyc_status}
-                </td> */}
-                <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
-                  <MdVisibility
-                    style={{ cursor: "pointer", color: "#1976d2" }}
-                    // onClick={() => handleView(employer.id)}
-                    onClick={() => navigate(`/admin/employerDetails`)}
-                    disabled={loading}
-                  />
-                </td>
-                <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
-                  <select
-                    className={`
-    text-sm 
-    px-3  
-    border 
-    rounded-md 
-    shadow-sm 
-    focus:outline-none 
-    focus:ring-2 
-    focus:ring-blue-500 
-    focus:border-blue-500 
-    transition 
-    duration-150 
-    ease-in-out 
-    bg-white 
-    text-gray-700 
-    hover:border-gray-400
-    disabled:opacity-50
-  `}
-                    value={employer.kyc_status}
-                    onChange={(e) => {
-                      const newStatus = e.target.value;
-                      if (newStatus === "Verified") {
-                        handleApprove(employer.id, employer.name);
-                      } else if (newStatus === "Rejected") {
-                        handleReject(employer.id, employer.name);
-                      }
-                    }}
-                    disabled={loading}
+                <td className="px-6 py-4 text-right">
+                  <button
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded hover:bg-blue-100"
+                    onClick={() => navigate(`/super-admin/employer-details/${employer.id}`)}
                   >
-                    <option
-                      value="Pending"
-                      className="text-yellow-600 font-medium border-none"
+                    <MdVisibility className="mr-1" /> View
+                  </button>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  {employer.kyc_status === "Pending" ? (
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded hover:bg-green-200"
+                        onClick={() => handleApprove(employer.id, employer.name)}
+                        disabled={loading}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200"
+                        onClick={() => handleReject(employer.id, employer.name)}
+                        disabled={loading}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span
+                      className={`inline-block px-2 py-1 text-xs font-semibold rounded ${{
+                        Verified: 'bg-green-100 text-green-800',
+                        Pending: 'bg-yellow-100 text-yellow-800',
+                        Rejected: 'bg-red-100 text-red-800',
+                      }[employer.kyc_status] || 'bg-gray-100 text-gray-800'}`}
                     >
-                      Pending
-                    </option>
-                    <option
-                      value="Verified"
-                      className="text-green-600 font-medium"
-                    >
-                      Verified
-                    </option>
-                    <option
-                      value="Rejected"
-                      className="text-red-600 font-medium"
-                    >
-                      Rejected
-                    </option>
-                  </select>
+                      {employer.kyc_status}
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
-          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing{" "}
-                <span className="font-medium">
-                  {(page - 1) * itemsPerPage + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-medium">
-                  {Math.min(page * itemsPerPage, filteredEmployers.length)}
-                </span>{" "}
-                of{" "}
-                <span className="font-medium">{filteredEmployers.length}</span>{" "}
-                results
-              </p>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={page === totalPages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
-            <div>
-              <nav className="inline-flex -space-x-px rounded-md shadow-sm isolate">
-                <button
-                  className="px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1 || loading}
-                >
-                  Previous
-                </button>
-                {Array.from(
-                  {
-                    length: Math.ceil(filteredEmployers.length / itemsPerPage),
-                  },
-                  (_, i) => (
-                    <button
-                      key={i + 1}
-                      className={`px-4 py-2 text-sm font-medium ${
-                        page === i + 1
-                          ? "text-blue-600 border-blue-500 bg-blue-50"
-                          : "text-gray-500 border-gray-300 bg-white"
-                      } hover:bg-gray-50`}
-                      onClick={() => setPage(i + 1)}
-                      disabled={loading}
-                    >
-                      {i + 1}
-                    </button>
-                  )
-                )}
-                <button
-                  className="px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50"
-                  onClick={() => setPage(page + 1)}
-                  disabled={
-                    page ===
-                      Math.ceil(filteredEmployers.length / itemsPerPage) ||
-                    loading
-                  }
-                >
-                  Next
-                </button>
-              </nav>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing page <span className="font-medium">{page}</span> of{' '}
+                  <span className="font-medium">{totalPages}</span>
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <button
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={page === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={page === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </nav>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
