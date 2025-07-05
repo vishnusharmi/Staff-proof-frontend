@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   PieChart,
   Pie,
@@ -28,13 +28,51 @@ import {
   Eye,
   MessageSquare,
 } from "lucide-react";
+import { fetchDashboard, fetchVerifications } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const VerifierDashboard = () => {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [assignedCases, setAssignedCases] = useState([]);
 
-  // Sample data based on the document requirements
-  const dashboardStats = {
+  const { user } = useContext(UserContext);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch dashboard data for verifier role
+        const dashboardResponse = await fetchDashboard('verifier');
+        setDashboardData(dashboardResponse);
+        
+        // Fetch assigned verification cases
+        const verificationsResponse = await fetchVerifications({ 
+          assignedTo: user?.id,
+          status: 'assigned,in_progress'
+        });
+        setAssignedCases(verificationsResponse.data || []);
+        
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  // Use real data or fallback to mock data structure
+  const dashboardStats = dashboardData?.stats || {
     totalAssigned: 156,
     casesVerified: 98,
     casesFlagged: 24,
@@ -42,14 +80,14 @@ const VerifierDashboard = () => {
     avgVerificationTime: 2.5, // hours
   };
 
-  const caseStatusData = [
+  const caseStatusData = dashboardData?.caseStatusData || [
     { name: "Verified", value: 98, color: "#10B981" },
     { name: "Flagged", value: 24, color: "#F59E0B" },
     { name: "Rejected", value: 12, color: "#EF4444" },
     { name: "In Progress", value: 22, color: "#3B82F6" },
   ];
 
-  const documentTypeData = [
+  const documentTypeData = dashboardData?.documentTypeData || [
     { name: "Resume", verified: 45, flagged: 8, rejected: 3 },
     { name: "Government ID", verified: 52, flagged: 4, rejected: 2 },
     { name: "Payslips", verified: 38, flagged: 12, rejected: 6 },
@@ -57,7 +95,7 @@ const VerifierDashboard = () => {
     { name: "Educational Certificates", verified: 43, flagged: 9, rejected: 2 },
   ];
 
-  const tagsData = [
+  const tagsData = dashboardData?.tagsData || [
     { name: "MNC Experience", value: 35, color: "#8B5CF6" },
     { name: "Fresher", value: 28, color: "#06B6D4" },
     { name: "Salary Mismatch", value: 18, color: "#F97316" },
@@ -65,7 +103,7 @@ const VerifierDashboard = () => {
     { name: "Suspected Forgery", value: 8, color: "#EF4444" },
   ];
 
-  const verificationTimeData = [
+  const verificationTimeData = dashboardData?.verificationTimeData || [
     { day: "Mon", avgTime: 2.2, cases: 18 },
     { day: "Tue", avgTime: 2.8, cases: 22 },
     { day: "Wed", avgTime: 2.1, cases: 25 },
@@ -75,53 +113,15 @@ const VerifierDashboard = () => {
     { day: "Sun", avgTime: 1.5, cases: 12 },
   ];
 
-  const assignedCases = [
-    {
-      id: "SP001",
-      name: "Rahul Sharma",
-      status: "New",
-      priority: "High",
-      documents: 5,
-    },
-    {
-      id: "SP002",
-      name: "Priya Patel",
-      status: "In Progress",
-      priority: "Medium",
-      documents: 4,
-    },
-    {
-      id: "SP003",
-      name: "Amit Kumar",
-      status: "Flagged",
-      priority: "High",
-      documents: 6,
-    },
-    {
-      id: "SP004",
-      name: "Sneha Singh",
-      status: "Completed",
-      priority: "Low",
-      documents: 3,
-    },
-    {
-      id: "SP005",
-      name: "Vikram Reddy",
-      status: "New",
-      priority: "Medium",
-      documents: 5,
-    },
-  ];
-
   const getStatusColor = (status) => {
     switch (status) {
-      case "Completed":
+      case "completed":
         return "text-green-600 bg-green-100";
-      case "In Progress":
+      case "in_progress":
         return "text-blue-600 bg-blue-100";
-      case "Flagged":
+      case "flagged":
         return "text-yellow-600 bg-yellow-100";
-      case "New":
+      case "new":
         return "text-purple-600 bg-purple-100";
       default:
         return "text-gray-600 bg-gray-100";
@@ -130,11 +130,11 @@ const VerifierDashboard = () => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case "High":
+      case "high":
         return "text-red-600 bg-red-100";
-      case "Medium":
+      case "medium":
         return "text-yellow-600 bg-yellow-100";
-      case "Low":
+      case "low":
         return "text-green-600 bg-green-100";
       default:
         return "text-gray-600 bg-gray-100";
@@ -142,6 +142,36 @@ const VerifierDashboard = () => {
   };
 
   const COLORS = ["#10B981", "#F59E0B", "#EF4444", "#3B82F6"];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <AlertTriangle size={48} className="mx-auto" />
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -153,16 +183,16 @@ const VerifierDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">
                 StaffProof Verifier Panel
               </h1>
-              {/* <p className="text-gray-600">Welcome, Verifier Name</p> */}
+              <p className="text-gray-600">Welcome, {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Verifier'}</p>
             </div>
-            {/* <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
                 Session expires in: 12:34
               </div>
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                 V
               </div>
-            </div> */}
+            </div>
           </div>
         </div>
       </div>

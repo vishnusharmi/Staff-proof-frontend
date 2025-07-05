@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Box,
   Button,
@@ -31,58 +31,8 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelIcon from "@mui/icons-material/Cancel";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import { teal } from "@mui/material/colors";
-
-// Static data to simulate API response
-const staticLogs = [
-  {
-    id: 1,
-    employee_name: "John Doe",
-    employer_name: "Acme Corp",
-    document_type: "Resume",
-    request_date: "2025-05-20T10:00:00Z",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    employee_name: "Jane Smith",
-    employer_name: "Tech Solutions",
-    document_type: "Aadhaar",
-    request_date: "2025-05-19T14:30:00Z",
-    status: "Approved",
-  },
-  {
-    id: 3,
-    employee_name: "Alice Johnson",
-    employer_name: "Global Inc",
-    document_type: "Payslip",
-    request_date: "2025-05-18T09:15:00Z",
-    status: "Denied",
-  },
-  {
-    id: 4,
-    employee_name: "Bob Brown",
-    employer_name: "Future Tech",
-    document_type: "Experience Letter",
-    request_date: "2025-05-17T16:45:00Z",
-    status: "Pending",
-  },
-  {
-    id: 5,
-    employee_name: "Emma Davis",
-    employer_name: "Innovate Ltd",
-    document_type: "Educational Certificate",
-    request_date: "2025-05-16T12:20:00Z",
-    status: "Approved",
-  },
-  {
-    id: 6,
-    employee_name: "Michael Wilson",
-    employer_name: "Star Enterprises",
-    document_type: "Passport",
-    request_date: "2025-05-15T11:10:00Z",
-    status: "Pending",
-  },
-];
+import { fetchAccessRequests, approveAccessRequest, denyAccessRequest } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 // Custom Status Badge component
 const StatusBadge = ({ status }) => {
@@ -132,7 +82,11 @@ const AccessRequest = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRequests, setTotalRequests] = useState(0);
   const itemsPerPage = 5;
+
+  const { user } = useContext(UserContext);
 
   // Teal color palette
   const tealColors = {
@@ -143,327 +97,424 @@ const AccessRequest = () => {
   };
 
   const loadData = async () => {
-    setLoading(true);
-    setError(null);
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setLogs(staticLogs);
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetchAccessRequests({
+        page,
+        limit: itemsPerPage,
+        search,
+        status: statusFilter,
+        documentType: typeFilter
+      });
+      
+      setLogs(response.data || []);
+      setTotalPages(response.pagination?.pages || 1);
+      setTotalRequests(response.pagination?.total || 0);
+      
     } catch (err) {
-      setError("Failed to load access request logs");
+      console.error('Error fetching access requests:', err);
+      setError(err.response?.data?.message || 'Failed to load access request logs');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, [search, statusFilter, typeFilter]);
+    if (user) {
+      loadData();
+    }
+  }, [user, page, search, statusFilter, typeFilter]);
 
-  const handleAction = async (action, id, employeeName, documentType) => {
+  const handleAction = async (action, id, firstName, lastName, documentType) => {
     setLoading(true);
     setError(null);
     try {
       if (action === "approve") {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        alert(`Approved access request for ${employeeName}'s ${documentType}`);
+        await approveAccessRequest(id, { approved: true });
+        alert(`Approved access request for ${firstName} ${lastName}'s ${documentType}`);
       } else if (action === "deny") {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        alert(`Denied access request for ${employeeName}'s ${documentType}`);
+        await denyAccessRequest(id, { denied: true });
+        alert(`Denied access request for ${firstName} ${lastName}'s ${documentType}`);
       }
       await loadData();
     } catch (err) {
-      setError(`Failed to ${action} access request for ${employeeName}`);
+      console.error(`Error ${action}ing access request:`, err);
+      setError(`Failed to ${action} access request for ${firstName} ${lastName}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      log.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-      log.employer_name.toLowerCase().includes(search.toLowerCase());
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-    const matchesStatus = statusFilter ? log.status === statusFilter : true;
-    const matchesType = typeFilter ? log.document_type === typeFilter : true;
-
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  const paginatedLogs = filteredLogs.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  if (loading && logs.length === 0) {
+    return (
+      <div className="min-h-screen p-6 bg-teal-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <CircularProgress sx={{ color: '#008080' }} />
+            <span className="ml-3 text-teal-600">Loading access requests...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header with animation */}
-      <Fade in={true} timeout={800}>
-        <Typography
-          variant="h4"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: "bold",
-            color: tealColors.dark,
-            mb: 4,
-            textAlign: "center",
-            textShadow: "1px 1px 2px rgba(0,0,0,0.1)",
-          }}
-        >
-          Access Request Logs
-        </Typography>
-      </Fade>
-
-      {loading && (
-        <Box display="flex" justifyContent="center" my={2}>
-          <CircularProgress size={30} style={{ color: tealColors.main }} />
-        </Box>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Search and filters section */}
-      <Grow in={true} timeout={600}>
-        <Paper
-          elevation={2}
-          sx={{ p: 3, mb: 4, borderRadius: 3, bgcolor: tealColors.light }}
-        >
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={5}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Search by employee or employer name"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tealColors.main }} />
-                    </InputAdornment>
-                  ),
-                  sx: {
-                    borderRadius: 2,
-                    bgcolor: "white",
-                  },
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={6} md={3.5}>
-              <Select
-                fullWidth
-                variant="outlined"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                displayEmpty
-                disabled={loading}
-                sx={{
-                  borderRadius: 2,
-                  bgcolor: "white",
-                }}
-              >
-                <MenuItem value="">All Status</MenuItem>
-                <MenuItem value="Approved">Approved</MenuItem>
-                <MenuItem value="Denied">Denied</MenuItem>
-                <MenuItem value="Pending">Pending</MenuItem>
-              </Select>
-            </Grid>
-
-            <Grid item xs={6} md={3.5}>
-              <Select
-                fullWidth
-                variant="outlined"
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                displayEmpty
-                disabled={loading}
-                sx={{
-                  borderRadius: 2,
-                  bgcolor: "white",
-                }}
-              >
-                <MenuItem value="">All Document Types</MenuItem>
-                <MenuItem value="Resume">Resume</MenuItem>
-                <MenuItem value="Aadhaar">Aadhaar</MenuItem>
-                <MenuItem value="Payslip">Payslip</MenuItem>
-                <MenuItem value="Experience Letter">Experience Letter</MenuItem>
-                <MenuItem value="Educational Certificate">
-                  Educational Certificate
-                </MenuItem>
-                <MenuItem value="Passport">Passport</MenuItem>
-              </Select>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Grow>
-
-      {/* Logs table */}
-      <Grow in={filteredLogs.length > 0} timeout={700}>
+      <Fade in={true} timeout={500}>
         <Box>
-          <TableContainer
-            component={Paper}
-            elevation={2}
-            sx={{ borderRadius: 3, mb: 4 }}
-          >
-            <Table>
-              <TableHead sx={{ bgcolor: tealColors.main }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: "bold", color: "white" }}>
-                    ID
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold", color: "white" }}>
-                    Employee Name
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold", color: "white" }}>
-                    Employer
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold", color: "white" }}>
-                    Document Type
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold", color: "white" }}>
-                    Request Date
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold", color: "white" }}>
-                    Status
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{ fontWeight: "bold", color: "white" }}
-                  >
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedLogs.map((log, index) => (
-                  <Grow in={true} timeout={index * 100} key={log.id}>
-                    <TableRow
-                      hover
+          {/* Header */}
+          <Box sx={{ mb: 4 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                color: tealColors.dark,
+                fontWeight: 700,
+                mb: 1,
+              }}
+            >
+              Access Request Management
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Manage and approve document access requests from employers
+            </Typography>
+          </Box>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Filters */}
+          <Grow in={true} timeout={600}>
+            <Paper
+              sx={{
+                p: 3,
+                mb: 3,
+                borderRadius: 2,
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="Search by employee or employer name..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ color: tealColors.main }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        "&:hover fieldset": {
+                          borderColor: tealColors.main,
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: tealColors.main,
+                        },
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth>
+                    <Select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      displayEmpty
                       sx={{
-                        "&:nth-of-type(odd)": { bgcolor: tealColors.light },
-                        "&:last-child td": { borderBottom: 0 },
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: tealColors.light,
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: tealColors.main,
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: tealColors.main,
+                        },
                       }}
                     >
-                      <TableCell sx={{ fontWeight: "medium" }}>
-                        {log.id}
+                      <MenuItem value="">All Status</MenuItem>
+                      <MenuItem value="Pending">Pending</MenuItem>
+                      <MenuItem value="Approved">Approved</MenuItem>
+                      <MenuItem value="Denied">Denied</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth>
+                    <Select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      displayEmpty
+                      sx={{
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: tealColors.light,
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: tealColors.main,
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: tealColors.main,
+                        },
+                      }}
+                    >
+                      <MenuItem value="">All Document Types</MenuItem>
+                      <MenuItem value="Resume">Resume</MenuItem>
+                      <MenuItem value="Aadhaar">Aadhaar</MenuItem>
+                      <MenuItem value="Payslip">Payslip</MenuItem>
+                      <MenuItem value="Experience Letter">Experience Letter</MenuItem>
+                      <MenuItem value="Educational Certificate">Educational Certificate</MenuItem>
+                      <MenuItem value="Passport">Passport</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grow>
+
+          {/* Stats */}
+          <Grow in={true} timeout={700}>
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    textAlign: "center",
+                    borderRadius: 2,
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    background: `linear-gradient(135deg, ${tealColors.light} 0%, ${tealColors.main}20 100%)`,
+                  }}
+                >
+                  <Typography variant="h4" sx={{ color: tealColors.dark, fontWeight: 700 }}>
+                    {totalRequests}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Requests
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    textAlign: "center",
+                    borderRadius: 2,
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    background: `linear-gradient(135deg, ${tealColors.light} 0%, ${tealColors.main}20 100%)`,
+                  }}
+                >
+                  <Typography variant="h4" sx={{ color: "warning.main", fontWeight: 700 }}>
+                    {logs.filter(log => log.status === "Pending").length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Pending
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    textAlign: "center",
+                    borderRadius: 2,
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    background: `linear-gradient(135deg, ${tealColors.light} 0%, ${tealColors.main}20 100%)`,
+                  }}
+                >
+                  <Typography variant="h4" sx={{ color: "success.main", fontWeight: 700 }}>
+                    {logs.filter(log => log.status === "Approved").length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Approved
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    textAlign: "center",
+                    borderRadius: 2,
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    background: `linear-gradient(135deg, ${tealColors.light} 0%, ${tealColors.main}20 100%)`,
+                  }}
+                >
+                  <Typography variant="h4" sx={{ color: "error.main", fontWeight: 700 }}>
+                    {logs.filter(log => log.status === "Denied").length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Denied
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Grow>
+
+          {/* Table */}
+          <Grow in={true} timeout={800}>
+            <Paper
+              sx={{
+                borderRadius: 2,
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                overflow: "hidden",
+              }}
+            >
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: tealColors.light }}>
+                      <TableCell sx={{ fontWeight: 600, color: tealColors.dark }}>
+                        Employee
                       </TableCell>
-                      <TableCell>{log.employee_name}</TableCell>
-                      <TableCell>{log.employer_name}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={log.document_type}
-                          size="small"
-                          sx={{
-                            bgcolor: tealColors.light,
-                            color: tealColors.dark,
-                            fontWeight: "medium",
-                          }}
-                        />
+                      <TableCell sx={{ fontWeight: 600, color: tealColors.dark }}>
+                        Employer
                       </TableCell>
-                      <TableCell>
-                        {new Date(log.request_date).toLocaleDateString()}
+                      <TableCell sx={{ fontWeight: 600, color: tealColors.dark }}>
+                        Document Type
                       </TableCell>
-                      <TableCell>
-                        <StatusBadge status={log.status} />
+                      <TableCell sx={{ fontWeight: 600, color: tealColors.dark }}>
+                        Request Date
                       </TableCell>
-                      <TableCell align="right">
-                        {log.status === "Pending" && (
-                          <FormControl size="small" fullWidth>
-                            <Select
-                              displayEmpty
-                              defaultValue=""
-                              onChange={(e) => {
-                                const action = e.target.value;
-                                if (action === "approve" || action === "deny") {
-                                  handleAction(
-                                    action,
-                                    log.id,
-                                    log.employee_name,
-                                    log.document_type
-                                  );
-                                }
-                              }}
-                              disabled={loading}
-                              sx={{ minWidth: 150 }}
-                            >
-                              <MenuItem value="" disabled>
-                                Select Action
-                              </MenuItem>
-                              <MenuItem value="approve">Approve</MenuItem>
-                              <MenuItem value="deny">Deny</MenuItem>
-                            </Select>
-                          </FormControl>
-                        )}
+                      <TableCell sx={{ fontWeight: 600, color: tealColors.dark }}>
+                        Status
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: tealColors.dark }}>
+                        Actions
                       </TableCell>
                     </TableRow>
-                  </Grow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {logs.map((log, index) => (
+                      <TableRow
+                        key={log.id}
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: tealColors.light + "20",
+                          },
+                        }}
+                      >
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {log.employee_name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {log.employer_name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {log.document_type}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatDate(log.request_date)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={log.status} />
+                        </TableCell>
+                        <TableCell>
+                          {log.status === "Pending" && (
+                            <Box sx={{ display: "flex", gap: 1 }}>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                onClick={() =>
+                                  handleAction("approve", log.id, log.first_name, log.last_name, log.document_type)
+                                }
+                                disabled={loading}
+                                sx={{
+                                  backgroundColor: "success.main",
+                                  "&:hover": {
+                                    backgroundColor: "success.dark",
+                                  },
+                                }}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="error"
+                                onClick={() =>
+                                  handleAction("deny", log.id, log.first_name, log.last_name, log.document_type)
+                                }
+                                disabled={loading}
+                                sx={{
+                                  backgroundColor: "error.main",
+                                  "&:hover": {
+                                    backgroundColor: "error.dark",
+                                  },
+                                }}
+                              >
+                                Deny
+                              </Button>
+                            </Box>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-          {/* Empty state */}
-          {filteredLogs.length === 0 && !loading && (
-            <Paper
-              elevation={2}
-              sx={{
-                p: 4,
-                textAlign: "center",
-                borderRadius: 3,
-                bgcolor: tealColors.light,
-              }}
-            >
-              <Typography variant="h6" sx={{ color: tealColors.dark }}>
-                No access request logs found
-              </Typography>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    p: 2,
+                    borderTop: `1px solid ${tealColors.light}`,
+                  }}
+                >
+                  <Pagination
+                    count={totalPages}
+                    page={page}
+                    onChange={(e, newPage) => setPage(newPage)}
+                    color="primary"
+                    sx={{
+                      "& .MuiPaginationItem-root": {
+                        color: tealColors.dark,
+                      },
+                      "& .Mui-selected": {
+                        backgroundColor: tealColors.main,
+                        color: "white",
+                        "&:hover": {
+                          backgroundColor: tealColors.dark,
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+              )}
             </Paper>
-          )}
-
-          {/* Pagination */}
-          {filteredLogs.length > 0 && (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 4,
-              }}
-            >
-              <Typography variant="body1" sx={{ color: tealColors.dark }}>
-                Showing <b>{(page - 1) * itemsPerPage + 1}</b> to{" "}
-                <b>{Math.min(page * itemsPerPage, filteredLogs.length)}</b> of{" "}
-                <b>{filteredLogs.length}</b> logs
-              </Typography>
-
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(e, value) => setPage(value)}
-                color="primary"
-                sx={{
-                  "& .MuiPaginationItem-root": {
-                    color: tealColors.dark,
-                    "&.Mui-selected": {
-                      bgcolor: tealColors.light,
-                      fontWeight: "bold",
-                    },
-                  },
-                }}
-              />
-            </Box>
-          )}
+          </Grow>
         </Box>
-      </Grow>
+      </Fade>
     </Container>
   );
 };

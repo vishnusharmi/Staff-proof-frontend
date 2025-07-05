@@ -168,7 +168,7 @@ const BlacklistTable = ({ filteredEmployees, handleEdit, handleDeleteOpen }) => 
                 <StyledTableRow key={employee.id}>
                   <TableCell sx={{ padding: "8px 16px" }}>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {employee.fullname}
+                      {`${employee.firstName} ${employee.lastName}`}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ padding: "8px 16px" }}>

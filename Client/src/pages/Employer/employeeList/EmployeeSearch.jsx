@@ -12,58 +12,44 @@ import {
   User,
   GraduationCap,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import EmployeeTable from "./EmployeeTable";
 import { Link } from "react-router";
+import { searchEmployees, requestAccess } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 export default function EmployerSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [employee, setEmployee] = useState(null);
   const [accessRequested, setAccessRequested] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Mock employee data for demonstration
-  const mockEmployee = {
-    id: "SP-123456",
-    name: "Jane Smith",
-    isVerified: true,
-    hasBadge: true,
-    hasGrantedAccess: false,
-    jobRecords: [
-      {
-        company: "Tech Innovations Inc.",
-        role: "Senior Developer",
-        duration: "Jan 2020 - Present",
-        verified: true,
-      },
-      {
-        company: "Digital Solutions Ltd.",
-        role: "Developer",
-        duration: "Mar 2017 - Dec 2019",
-        verified: true,
-      },
-      {
-        company: "StartUp Co.",
-        role: "Junior Developer",
-        duration: "Jun 2015 - Feb 2017",
-        verified: false,
-      },
-    ],
-    verifications: [
-      { type: "Identity", status: "Verified", canView: false },
-      { type: "Education", status: "Verified", canView: false },
-      { type: "Background Check", status: "Pending", canView: false },
-    ],
-  };
+  const { user } = useContext(UserContext);
 
-  const handleSearch = () => {
-    // In a real app, this would make an API call
-    if (searchQuery.toUpperCase().startsWith("SP-")) {
-      setEmployee(mockEmployee);
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
       setSearchPerformed(true);
-    } else {
+      
+      const response = await searchEmployees({ q: searchQuery });
+      if (response.success && response.employees.length > 0) {
+        setEmployee(response.employees[0]);
+        setAccessRequested(false);
+      } else {
+        setEmployee(null);
+        setError('No employee found with the provided StaffProof ID');
+      }
+    } catch (err) {
+      console.error('Error searching employee:', err);
+      setError(err.response?.data?.message || 'Employee not found');
       setEmployee(null);
-      setSearchPerformed(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,9 +59,23 @@ export default function EmployerSearch() {
     }
   };
 
-  const sendAccessRequest = () => {
-    setAccessRequested(true);
-    // In a real app, this would send a request to the employee
+  const sendAccessRequest = async () => {
+    if (!employee) return;
+    
+    try {
+      setLoading(true);
+      await requestAccess({
+        employeeId: employee.id,
+        employerId: user?.id,
+        requestType: 'profile_access'
+      });
+      setAccessRequested(true);
+    } catch (err) {
+      console.error('Error requesting access:', err);
+      setError(err.response?.data?.message || 'Failed to send access request');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,20 +105,29 @@ export default function EmployerSearch() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
+            disabled={loading}
           />
           <div className="absolute left-3 top-2.5 text-gray-400">
             <Search size={18} />
           </div>
         </div>
         <button
-          className="bg-blue-600 text-white px-6 py-2 rounded-r-lg hover:bg-blue-700 focus:outline-none"
+          className="bg-blue-600 text-white px-6 py-2 rounded-r-lg hover:bg-blue-700 focus:outline-none disabled:opacity-50"
           onClick={handleSearch}
+          disabled={loading}
         >
-          Search
+          {loading ? 'Searching...' : 'Search'}
         </button>
       </div>
 
-      {searchPerformed && !employee && (
+      {error && (
+        <div className="bg-red-50 p-4 rounded-lg border border-red-200 flex items-center">
+          <AlertCircle className="text-red-500 mr-2" />
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      {searchPerformed && !employee && !error && (
         <div className="bg-red-50 p-4 rounded-lg border border-red-200 flex items-center">
           <AlertCircle className="text-red-500 mr-2" />
           <p className="text-red-700">
@@ -133,9 +142,9 @@ export default function EmployerSearch() {
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
             <div>
               <h2 className="text-xl font-semibold text-gray-800">
-                {employee.name}
+                {employee.firstName} {employee.lastName}
               </h2>
-              <p className="text-gray-600">ID: {employee.id}</p>
+              <p className="text-gray-600">ID: {employee.staffProofId}</p>
             </div>
             <div className="flex items-center space-x-3">
               {employee.isVerified ? (
@@ -165,7 +174,7 @@ export default function EmployerSearch() {
               Employment History
             </h3>
             <div className="space-y-3">
-              {employee.jobRecords.map((job, index) => (
+              {employee.jobHistory?.map((job, index) => (
                 <div
                   key={index}
                   className="p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center"
@@ -177,14 +186,16 @@ export default function EmployerSearch() {
                     </div>
                     <div className="flex items-center text-sm text-gray-600 mb-1">
                       <Briefcase size={14} className="mr-2" />
-                      <span>{job.role}</span>
+                      <span>{job.designation}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Calendar size={14} className="mr-2" />
-                      <span>{job.duration}</span>
+                      <span>
+                        {new Date(job.startDate).toLocaleDateString()} - {job.currentlyWorking ? 'Present' : new Date(job.endDate).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                  {job.verified ? (
+                  {job.status === 'verified' ? (
                     <div className="flex items-center text-green-600">
                       <CheckCircle size={18} className="mr-1" />
                       <span className="font-medium">Verified</span>
@@ -207,7 +218,7 @@ export default function EmployerSearch() {
               Verification Records
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {employee.verifications.map((verification, index) => {
+              {employee.verifications?.map((verification, index) => {
                 const VerificationIcon =
                   verification.type === "Identity"
                     ? User

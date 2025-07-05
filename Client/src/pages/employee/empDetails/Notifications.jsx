@@ -1,316 +1,298 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Chip,
-  IconButton,
-  LinearProgress,
-  Divider,
-  Tabs,
-  Tab,
-  TextField,
-  ListSubheader,
-  Avatar,
-  Box,
-  Grow,
-  Fade,
-  Slide,
-  TablePagination
-} from '@mui/material';
-import {
-  CheckCircle,
-  Warning,
-  Error,
-  Info,
-  MarkEmailRead,
-  Delete,
-  Search,
-  Refresh
-} from '@mui/icons-material';
-import { teal } from '@mui/material/colors';
+import React, { useState, useEffect } from 'react';
+import { Bell, Check, Trash2, Eye, EyeOff, Filter, Search } from 'lucide-react';
+import axios from 'axios';
 
-const notificationConfig = {
-  success: { color: teal[500], icon: <CheckCircle /> },
-  warning: { color: teal[700], icon: <Warning /> },
-  error: { color: teal[900], icon: <Error /> },
-  info: { color: teal[300], icon: <Info /> }
-};
-
-// Dummy data
-const sampleNotifications = [
-  { id: 1, message: 'Your document has been approved', date: '2 min ago', type: 'success', read: false },
-  { id: 2, message: 'Payment received for invoice #1234', date: '15 min ago', type: 'info', read: false },
-  { id: 3, message: 'System maintenance scheduled tonight', date: '1 hour ago', type: 'warning', read: true },
-  { id: 4, message: 'Security alert: New login detected', date: '5 hours ago', type: 'error', read: false },
-  { id: 5, message: 'New document shared with you', date: '1 day ago', type: 'info', read: true },
-  { id: 6, message: 'Profile update completed successfully', date: '2 days ago', type: 'success', read: true },
-  { id: 7, message: 'New verification request received', date: '3 days ago', type: 'info', read: false },
-  { id: 8, message: 'Document verification failed', date: '3 days ago', type: 'error', read: true },
-  { id: 9, message: 'System backup completed', date: '4 days ago', type: 'success', read: true },
-  { id: 10, message: 'Password change notification', date: '4 days ago', type: 'warning', read: false },
-  { id: 11, message: 'New message from admin', date: '5 days ago', type: 'info', read: true },
-  { id: 12, message: 'Account settings updated', date: '5 days ago', type: 'success', read: true },
-  { id: 13, message: 'Login attempt from new device', date: '6 days ago', type: 'warning', read: false },
-  { id: 14, message: 'Document upload successful', date: '6 days ago', type: 'success', read: true },
-  { id: 15, message: 'Verification process started', date: '1 week ago', type: 'info', read: true },
-  { id: 16, message: 'System update available', date: '1 week ago', type: 'warning', read: false },
-  { id: 17, message: 'Account verification completed', date: '1 week ago', type: 'success', read: true },
-  { id: 18, message: 'New feature available', date: '2 weeks ago', type: 'info', read: true },
-  { id: 19, message: 'Security scan completed', date: '2 weeks ago', type: 'success', read: true },
-  { id: 20, message: 'Maintenance window scheduled', date: '2 weeks ago', type: 'warning', read: false },
-];
-
-export default function Notifications() {
-  const [notes, setNotes] = useState(sampleNotifications);
-  const [filteredNotes, setFilteredNotes] = useState([]);
-  const [selectedType, setSelectedType] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+const Notifications = () => {
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  
-  // Pagination state
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [filters, setFilters] = useState({
+    type: '',
+    category: '',
+    read: '',
+    priority: ''
+  });
 
   useEffect(() => {
-    filterNotifications();
-    setPage(0); // Reset to first page when filters change
-  }, [searchTerm, selectedType, notes]);
+    fetchNotifications();
+    fetchUnreadCount();
+  }, [filters]);
 
-  const filterNotifications = () => {
-    let result = notes.filter(note => {
-      const matchesSearch = note.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.date.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = selectedType === 'all' || note.type === selectedType;
-      return matchesSearch && matchesType;
-    });
-    setFilteredNotes(result);
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/api/notifications', {
+        params: {
+          page: 1,
+          limit: 50,
+          ...filters
+        }
+      });
+      setNotifications(response.data.notifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleMarkRead = (id) => {
-    setNotes(prev => prev.map(note => 
-      note.id === id ? { ...note, read: true } : note
-    ));
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get('/api/notifications/unread-count');
+      setUnreadCount(response.data.count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
   };
 
-  const handleDelete = (id) => {
-    setNotes(prev => prev.filter(note => note.id !== id));
+  const markAsRead = async (notificationId) => {
+    try {
+      await axios.put(`/api/notifications/${notificationId}/read`);
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif._id === notificationId 
+            ? { ...notif, read: true, readAt: new Date() }
+            : notif
+        )
+      );
+      fetchUnreadCount();
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  // Pagination handlers
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+  const markAllAsRead = async () => {
+    try {
+      await axios.put('/api/notifications/mark-all-read');
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, read: true, readAt: new Date() }))
+      );
+      fetchUnreadCount();
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+  const deleteNotification = async (notificationId) => {
+    try {
+      await axios.delete(`/api/notifications/${notificationId}`);
+      setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
+      fetchUnreadCount();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
-  // Calculate paginated notifications
-  const paginatedNotifications = filteredNotes.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'success':
+        return '✅';
+      case 'warning':
+        return '⚠️';
+      case 'error':
+        return '❌';
+      case 'info':
+        return 'ℹ️';
+      default:
+        return '📢';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'urgent':
+        return 'text-red-600 bg-red-100';
+      case 'high':
+        return 'text-orange-600 bg-orange-100';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-100';
+      case 'low':
+        return 'text-green-600 bg-green-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const handleAction = (notification) => {
+    if (notification.action?.type === 'link' && notification.action?.url) {
+      window.location.href = notification.action.url;
+    }
+    if (!notification.read) {
+      markAsRead(notification._id);
+    }
+  };
 
   return (
-    <Slide direction="up" in={true} mountOnEnter unmountOnExit>
-      <Paper sx={{ 
-        p: 2, 
-        position: 'relative',
-        background: `linear-gradient(45deg, ${teal[50]}, ${teal[100]})`,
-        borderRadius: 4,
-        boxShadow: '0 8px 32px rgba(0, 128, 128, 0.1)'
-      }}>
-        {loading && <LinearProgress sx={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0,
-          '& .MuiLinearProgress-bar': { backgroundColor: teal[500] }
-        }} />}
-        
-        <Box display="flex" alignItems="center" mb={2} gap={2}>
-          <Typography variant="h4" sx={{ color: teal[800], fontWeight: 'bold' }}>
-            Notifications
-          </Typography>
-          <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Search notifications..."
-              InputProps={{ 
-                startAdornment: <Search sx={{ color: teal[500] }} />,
-                sx: { borderRadius: 20 }
-              }}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: teal[300] },
-                  '&:hover fieldset': { borderColor: teal[500] },
-                }
-              }}
-            />
-            <IconButton 
-              onClick={() => setNotes([...sampleNotifications])}
-              sx={{ 
-                backgroundColor: teal[50],
-                '&:hover': { backgroundColor: teal[100] }
-              }}
-            >
-              <Refresh sx={{ color: teal[600] }} />
-            </IconButton>
-          </Box>
-        </Box>
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <Bell className="h-8 w-8 text-blue-600" />
+          <h1 className="text-2xl font-bold text-gray-900">My Notifications</h1>
+          {unreadCount > 0 && (
+            <span className="px-3 py-1 bg-red-500 text-white text-sm rounded-full">
+              {unreadCount} new
+            </span>
+          )}
+        </div>
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllAsRead}
+            className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-300 rounded-md"
+          >
+            Mark all read
+          </button>
+        )}
+      </div>
 
-        <Tabs
-          value={selectedType}
-          onChange={(e, newValue) => setSelectedType(newValue)}
-          sx={{ 
-            mb: 2,
-            '& .MuiTab-root': { color: teal[600] },
-            '& .Mui-selected': { color: teal[800] },
-            '& .MuiTabs-indicator': { backgroundColor: teal[500] }
-          }}
-        >
-          <Tab label="All" value="all" />
-          <Tab label="Success" value="success" />
-          <Tab label="Warnings" value="warning" />
-          <Tab label="Errors" value="error" />
-          <Tab label="Info" value="info" />
-        </Tabs>
+      {/* Filters */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <select
+            value={filters.type}
+            onChange={(e) => setFilters({...filters, type: e.target.value})}
+            className="p-2 border border-gray-300 rounded-md"
+          >
+            <option value="">All Types</option>
+            <option value="info">Info</option>
+            <option value="success">Success</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="system">System</option>
+          </select>
 
-        <List
-          subheader={
-            <ListSubheader sx={{ 
-              backgroundColor: teal[50],
-              borderRadius: 2,
-              color: teal[800],
-              fontWeight: 'bold'
-            }}>
-              {filteredNotes.length} notifications found
-            </ListSubheader>
-          }
-        >
-          {paginatedNotifications.map((note, index) => (
-            <Grow key={note.id} in={true} timeout={(index + 1) * 150}>
-              <div>
-                <ListItem
-                  sx={{
-                    bgcolor: note.read ? 'white' : teal[50],
-                    transition: 'all 0.3s ease',
-                    borderRadius: 2,
-                    mb: 1,
-                    '&:hover': {
-                      transform: 'translateX(8px)',
-                      boxShadow: `0 4px 16px ${teal[100]}`
-                    }
-                  }}
-                >
-                  <Avatar sx={{ 
-                    bgcolor: notificationConfig[note.type].color,
-                    boxShadow: `0 4px 12px ${notificationConfig[note.type].color}80`
-                  }}>
-                    {notificationConfig[note.type].icon}
-                  </Avatar>
-                  <ListItemText
-                    primary={
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="body1" sx={{ color: teal[800] }}>
-                          {note.message}
-                        </Typography>
-                        {!note.read && (
-                          <Chip 
-                            label="New" 
-                            size="small" 
-                            sx={{ 
-                              backgroundColor: teal[100],
-                              color: teal[800],
-                              fontWeight: 'bold'
-                            }} 
-                          />
+          <select
+            value={filters.category}
+            onChange={(e) => setFilters({...filters, category: e.target.value})}
+            className="p-2 border border-gray-300 rounded-md"
+          >
+            <option value="">All Categories</option>
+            <option value="verification">Verification</option>
+            <option value="billing">Billing</option>
+            <option value="security">Security</option>
+            <option value="system">System</option>
+            <option value="profile">Profile</option>
+          </select>
+
+          <select
+            value={filters.read}
+            onChange={(e) => setFilters({...filters, read: e.target.value})}
+            className="p-2 border border-gray-300 rounded-md"
+          >
+            <option value="">All Status</option>
+            <option value="false">Unread</option>
+            <option value="true">Read</option>
+          </select>
+
+          <select
+            value={filters.priority}
+            onChange={(e) => setFilters({...filters, priority: e.target.value})}
+            className="p-2 border border-gray-300 rounded-md"
+          >
+            <option value="">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Notifications List */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-500">Loading notifications...</p>
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="p-8 text-center">
+            <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
+            <p className="text-gray-500">You're all caught up!</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {notifications.map(notification => (
+              <div
+                key={notification._id}
+                className={`p-6 hover:bg-gray-50 transition-colors ${
+                  !notification.read ? 'bg-blue-50' : ''
+                }`}
+              >
+                <div className="flex items-start space-x-4">
+                  <span className="text-2xl mt-1">
+                    {getNotificationIcon(notification.type)}
+                  </span>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {notification.title}
+                        </h3>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(notification.priority)}`}>
+                          {notification.priority}
+                        </span>
+                        {!notification.read && (
+                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            New
+                          </span>
                         )}
-                      </Box>
-                    }
-                    secondary={note.date}
-                    secondaryTypographyProps={{ color: teal[600] }}
-                    sx={{ ml: 2 }}
-                  />
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {!note.read && (
-                      <IconButton 
-                        onClick={() => handleMarkRead(note.id)}
-                        sx={{
-                          '&:hover': { backgroundColor: teal[100] }
-                        }}
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {notification.timeAgo}
+                      </span>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-3">
+                      {notification.message}
+                    </p>
+                    
+                    {notification.action?.type === 'link' && (
+                      <button
+                        onClick={() => handleAction(notification)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        <MarkEmailRead sx={{ color: teal[600] }} />
-                      </IconButton>
+                        {notification.action.label} →
+                      </button>
                     )}
-                    <IconButton 
-                      onClick={() => handleDelete(note.id)}
-                      sx={{
-                        '&:hover': { backgroundColor: teal[100] }
-                      }}
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    {!notification.read ? (
+                      <button
+                        onClick={() => markAsRead(notification._id)}
+                        className="p-2 text-gray-400 hover:text-blue-600"
+                        title="Mark as read"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => markAsRead(notification._id)}
+                        className="p-2 text-gray-400 hover:text-gray-600"
+                        title="Mark as unread"
+                      >
+                        <EyeOff className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteNotification(notification._id)}
+                      className="p-2 text-gray-400 hover:text-red-600"
+                      title="Delete"
                     >
-                      <Delete sx={{ color: teal[600] }} />
-                    </IconButton>
-                  </Box>
-                </ListItem>
-                <Divider variant="inset" component="li" sx={{ borderColor: teal[100] }} />
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </Grow>
-          ))}
-        </List>
-
-        {/* Pagination Component */}
-        {filteredNotes.length > 0 && (
-          <TablePagination
-            component="div"
-            count={filteredNotes.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25]}
-            sx={{
-              borderTop: `1px solid ${teal[100]}`,
-              mt: 2,
-              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                color: teal[800],
-                fontWeight: 500
-              },
-              '& .MuiTablePagination-select': {
-                color: teal[600]
-              },
-              '& .MuiIconButton-root': {
-                color: teal[600],
-                '&:hover': {
-                  backgroundColor: `${teal[100]}40`
-                },
-                '&.Mui-disabled': {
-                  color: teal[300]
-                }
-              }
-            }}
-          />
+            ))}
+          </div>
         )}
-
-        {filteredNotes.length === 0 && !loading && (
-          <Fade in={true}>
-            <Typography variant="body1" sx={{ 
-              p: 3, 
-              textAlign: 'center',
-              color: teal[600]
-            }}>
-              No notifications found
-            </Typography>
-          </Fade>
-        )}
-      </Paper>
-    </Slide>
+      </div>
+    </div>
   );
-}
+};
+
+export default Notifications;

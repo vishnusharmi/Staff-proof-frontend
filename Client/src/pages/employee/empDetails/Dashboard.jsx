@@ -30,8 +30,8 @@ import {
   Warning,
   Error
 } from '@mui/icons-material';
-import { fetchDashboard, fetchProfile } from '../api/api';
-import { useAuth } from '../context/AuthContext';
+import { fetchDashboard, fetchProfile } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 // Teal color definitions
 const tealPalette = {
@@ -82,21 +82,65 @@ const StatCard = ({ title, value, icon, color }) => (
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [profile, setProfile] = useState(null);
-  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user } = useContext(UserContext);
 
   useEffect(() => {
     const loadData = async () => {
-      const [dashboard, profile] = await Promise.all([
-        fetchDashboard(),
-        fetchProfile()
-      ]);
-      setDashboardData(dashboard);
-      setProfile(profile);
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [dashboard, profile] = await Promise.all([
+          fetchDashboard('employee'),
+          fetchProfile()
+        ]);
+        setDashboardData(dashboard);
+        setProfile(profile);
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
     };
-    loadData();
-  }, []);
 
-  if (!dashboardData || !profile) return <LinearProgress color="secondary" />;
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <LinearProgress sx={{ width: '100%', maxWidth: 400 }} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="error" variant="h6" gutterBottom>
+          Error loading dashboard
+        </Typography>
+        <Typography color="textSecondary">
+          {error}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!dashboardData || !profile) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="textSecondary">
+          No data available
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3, backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
@@ -119,11 +163,11 @@ export default function Dashboard() {
                     fontWeight: 'bold',
                     boxShadow: '0px 4px 15px rgba(0, 150, 136, 0.3)'
                   }}>
-                    {user?.fullName?.[0]}
+                    {user?.firstName?.[0]}
                   </Avatar>
                   <Box>
                     <Typography variant="h5" color={tealPalette.main}>
-                      Welcome, {user?.fullName}
+                      Welcome, {user?.firstName} {user?.lastName}
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
                       StaffProof ID: {profile.staffProofId}
@@ -136,10 +180,9 @@ export default function Dashboard() {
                     Verification Status
                   </Typography>
                   <Chip
-                    label={profile.verificationStatus || 'Pending'}
+                    label={profile.isVerified ? 'Verified' : 'Pending'}
                     color={
-                      profile.verificationStatus === 'Verified' ? 'success' :
-                      profile.verificationStatus === 'Pending' ? 'warning' : 'error'
+                      profile.isVerified ? 'success' : 'warning'
                     }
                     icon={<CheckCircle fontSize="small" />}
                     sx={{ 

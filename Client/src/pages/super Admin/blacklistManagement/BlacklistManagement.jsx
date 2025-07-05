@@ -1,64 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Search, AlertTriangle } from "lucide-react";
-
-const staticBlacklist = [
-  {
-    id: 1,
-    employee_name: "John Doe",
-    staffproof_id: "SP12345",
-    reported_by: "Acme Corp",
-    reason: "Unauthorized access to sensitive data",
-    report_date: "2025-01-15T10:00:00Z",
-    status: "Pending",
-    is_visible: true,
-  },
-  {
-    id: 2,
-    employee_name: "Jane Smith",
-    staffproof_id: "SP67890",
-    reported_by: "Tech Solutions",
-    reason: "Frequent absenteeism",
-    report_date: "2025-02-20T14:30:00Z",
-    status: "Approved",
-    is_visible: true,
-  },
-  {
-    id: 3,
-    employee_name: "Michael Brown",
-    staffproof_id: "SP11223",
-    reported_by: "Global Inc",
-    reason: "Policy violation",
-    report_date: "2025-03-10T09:15:00Z",
-    status: "Rejected",
-    is_visible: false,
-  },
-  {
-    id: 4,
-    employee_name: "Emily Davis",
-    staffproof_id: "SP44556",
-    reported_by: "Acme Corp",
-    reason: "Theft of company property",
-    report_date: "2025-04-05T16:45:00Z",
-    status: "Approved",
-    is_visible: false,
-  },
-  {
-    id: 5,
-    employee_name: "David Wilson",
-    staffproof_id: "SP78901",
-    reported_by: "Tech Solutions",
-    reason: "Inappropriate behavior",
-    report_date: "2025-05-01T11:20:00Z",
-    status: "Pending",
-    is_visible: true,
-  },
-];
-
-const staticEmployers = [
-  { id: 1, name: "Acme Corp" },
-  { id: 2, name: "Tech Solutions" },
-  { id: 3, name: "Global Inc" },
-];
+import { fetchBlacklist, updateBlacklistStatus } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const BlacklistManagement = () => {
   const [blacklist, setBlacklist] = useState([]);
@@ -68,57 +11,92 @@ const BlacklistManagement = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalEntries, setTotalEntries] = useState(0);
   const itemsPerPage = 5;
 
-  const loadData = () => {
-    setLoading(true);
+  const { user } = useContext(UserContext);
+
+  const loadData = async () => {
     try {
-      setBlacklist(staticBlacklist);
-      setEmployers(staticEmployers);
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetchBlacklist({
+        page,
+        limit: itemsPerPage,
+        search,
+        reportedBy: reportedByFilter
+      });
+      
+      setBlacklist(response.data || []);
+      setTotalPages(response.pagination?.pages || 1);
+      setTotalEntries(response.pagination?.total || 0);
+      
+      // Extract unique employers for filter
+      const uniqueEmployers = [...new Set(response.data?.map(item => item.reported_by) || [])];
+      setEmployers(uniqueEmployers.map(name => ({ id: name, name })));
+      
     } catch (err) {
-      setError("Failed to load blacklist data");
+      console.error('Error fetching blacklist data:', err);
+      setError(err.response?.data?.message || 'Failed to load blacklist data');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user, page, search, reportedByFilter]);
 
-  const handleAction = (action, id, name) => {
-    setBlacklist((prev) =>
-      prev.map((entry) =>
-        entry.id === id
-          ? {
-              ...entry,
-              status:
-                action.toLowerCase() === "approve"
-                  ? "Approved"
-                  : action.toLowerCase() === "reject"
-                  ? "Rejected"
-                  : entry.status,
-            }
-          : entry
-      )
-    );
+  const handleAction = async (action, id, firstName, lastName) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await updateBlacklistStatus(id, { status: action === 'approve' ? 'Approved' : 'Rejected' });
+      
+      setBlacklist((prev) =>
+        prev.map((entry) =>
+          entry.id === id
+            ? {
+                ...entry,
+                status: action === "approve" ? "Approved" : "Rejected",
+              }
+            : entry
+        )
+      );
+      
+      alert(`${action === 'approve' ? 'Approved' : 'Rejected'} blacklist entry for ${firstName} ${lastName}`);
+    } catch (err) {
+      console.error(`Error ${action}ing blacklist entry:`, err);
+      setError(`Failed to ${action} blacklist entry for ${firstName} ${lastName}`);
+    } finally {
+      setLoading(false);
+    }
   };
-  
 
-  const filteredBlacklist = blacklist.filter((item) => {
-    const matchesSearch =
-      item.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-      item.staffproof_id.toLowerCase().includes(search.toLowerCase());
-    const matchesReporter = reportedByFilter
-      ? item.reported_by === reportedByFilter
-      : true;
-    return matchesSearch && matchesReporter;
-  });
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
-  const paginatedBlacklist = filteredBlacklist.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  if (loading && blacklist.length === 0) {
+    return (
+      <div className="min-h-screen p-6 bg-teal-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+            <span className="ml-3 text-teal-600">Loading blacklist data...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 bg-teal-50">
@@ -129,22 +107,7 @@ const BlacklistManagement = () => {
           </h1>
           {loading && (
             <div className="flex items-center text-teal-600">
-              <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-600 mr-2"></div>
               Processing...
             </div>
           )}
@@ -155,6 +118,62 @@ const BlacklistManagement = () => {
             {error}
           </div>
         )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-teal-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-teal-600">Total Entries</p>
+                <p className="text-2xl font-bold text-teal-800">{totalEntries}</p>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-teal-500" />
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-teal-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-teal-600">Pending</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {blacklist.filter(item => item.status === "Pending").length}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-teal-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-teal-600">Approved</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {blacklist.filter(item => item.status === "Approved").length}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-teal-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-teal-600">Rejected</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {blacklist.filter(item => item.status === "Rejected").length}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Filters */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-teal-100">
@@ -198,68 +217,82 @@ const BlacklistManagement = () => {
         {/* Table */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-teal-100">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-teal-100">
+            <table className="min-w-full divide-y divide-teal-200">
               <thead className="bg-teal-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-teal-700 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">
                     Employee
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-teal-700 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">
                     StaffProof ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-teal-700 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">
                     Reported By
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-teal-700 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">
                     Reason
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-teal-700 uppercase">
-                    Date
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">
+                    Report Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-teal-700 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-teal-100">
-                {paginatedBlacklist.map((entry) => (
-                  <tr
-                    key={entry.id}
-                    className="hover:bg-teal-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm text-teal-800">
-                      {entry.employee_name}
+                {blacklist.map((item) => (
+                  <tr key={item.id} className="hover:bg-teal-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-teal-900">
+                        {item.employee_name}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-teal-700">
-                      {entry.staffproof_id}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-900">
+                      {item.staffproof_id}
                     </td>
-                    <td className="px-6 py-4 text-sm text-teal-700">
-                      {entry.reported_by}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-900">
+                      {item.reported_by}
                     </td>
-                    <td className="px-6 py-4 text-sm text-teal-700">
-                      {entry.reason}
+                    <td className="px-6 py-4 text-sm text-teal-900 max-w-xs truncate">
+                      {item.reason}
                     </td>
-                    <td className="px-6 py-4 text-sm text-teal-700">
-                      {new Date(entry.report_date).toLocaleDateString()}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-900">
+                      {formatDate(item.report_date)}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <select
-                        className="text-sm font-medium border rounded px-2 py-1 disabled:opacity-50"
-                        value={entry.status}
-                        disabled={entry.status !== "Pending"}
-                        onChange={(e) => {
-                          const selected = e.target.value;
-                          handleAction(
-                            selected === "Approved" ? "approve" : "reject",
-                            entry.id,
-                            entry.employee_name
-                          );
-                        }}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Approved">Approve</option>
-                        <option value="Rejected">Reject</option>
-                      </select>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                        item.status === "Pending" 
+                          ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                          : item.status === "Approved"
+                          ? "bg-green-100 text-green-800 border-green-300"
+                          : "bg-red-100 text-red-800 border-red-300"
+                      }`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {item.status === "Pending" && (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleAction("approve", item.id, item.first_name, item.last_name)}
+                            disabled={loading}
+                            className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleAction("reject", item.id, item.first_name, item.last_name)}
+                            disabled={loading}
+                            className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -268,53 +301,52 @@ const BlacklistManagement = () => {
           </div>
 
           {/* Pagination */}
-          <div className="px-4 py-3 bg-teal-50 border-t border-teal-100">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-teal-700">
-                Showing {paginatedBlacklist.length} of{" "}
-                {filteredBlacklist.length} entries
-              </div>
-              <div className="flex items-center gap-2">
+          {totalPages > 1 && (
+            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-teal-200 sm:px-6">
+              <div className="flex-1 flex justify-between sm:hidden">
                 <button
-                  className="px-3 py-1 text-sm text-teal-700 bg-white border border-teal-200 rounded-md hover:bg-teal-100 disabled:opacity-50"
-                  onClick={() => setPage(page - 1)}
+                  onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                   disabled={page === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-teal-300 text-sm font-medium rounded-md text-teal-700 bg-white hover:bg-teal-50 disabled:opacity-50"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-teal-700">
-                  Page {page} of{" "}
-                  {Math.ceil(filteredBlacklist.length / itemsPerPage)}
-                </span>
                 <button
-                  className="px-3 py-1 text-sm text-teal-700 bg-white border border-teal-200 rounded-md hover:bg-teal-100 disabled:opacity-50"
-                  onClick={() => setPage(page + 1)}
-                  disabled={
-                    page === Math.ceil(filteredBlacklist.length / itemsPerPage)
-                  }
+                  onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={page === totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-teal-300 text-sm font-medium rounded-md text-teal-700 bg-white hover:bg-teal-50 disabled:opacity-50"
                 >
                   Next
                 </button>
               </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-teal-700">
+                    Showing page <span className="font-medium">{page}</span> of{' '}
+                    <span className="font-medium">{totalPages}</span>
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                      disabled={page === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-teal-300 bg-white text-sm font-medium text-teal-500 hover:bg-teal-50 disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={page === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-teal-300 bg-white text-sm font-medium text-teal-500 hover:bg-teal-50 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Alert */}
-        <div className="p-4 bg-teal-50 rounded-xl border border-teal-200">
-          <div className="flex items-start">
-            <AlertTriangle className="flex-shrink-0 w-5 h-5 text-teal-600 mt-1" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-teal-800">
-                Privacy Assurance
-              </h3>
-              <p className="mt-1 text-sm text-teal-700">
-                Blacklist information is strictly confidential and only
-                accessible to verified employers. Employees cannot view their
-                blacklist status through any platform features.
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

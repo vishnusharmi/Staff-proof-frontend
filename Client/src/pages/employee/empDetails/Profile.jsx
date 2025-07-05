@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -14,91 +14,33 @@ import {
 import {
   Lock, CheckCircle, VerifiedUser, PendingActions, Cancel,
   CameraAlt, CloudUpload, Visibility, Edit, Add, Work,
-  Description, School, Person, ExpandMore, DateRange, AttachFile
+  Description, School, Person, ExpandMore, DateRange, AttachFile,
+  Email, Phone, Business, AttachMoney, Verified
 } from '@mui/icons-material';
 import { teal, green, orange, red } from '@mui/material/colors';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Simulated API calls
-const fetchProfile = async () => ({
-  id: 'SP-1234567',
-  fullName: 'John Doe',
-  email: 'john@example.com',
-  phone: '9876543210',
-  dob: '1990-01-01',
-  pan: 'ABCDE1234F',
-  aadhaar: '123456789012',
-  qualification: 'Masters',
-  experience: 5,
-  verificationStatus: 'verified',
-  profileImage: null,
-  documents: {
-    aadhaarFront: { name: 'aadhaar_front.pdf', status: 'verified', uploadDate: '2024-01-15' },
-    aadhaarBack: { name: 'aadhaar_back.pdf', status: 'verified', uploadDate: '2024-01-15' },
-    panCard: { name: 'pan_card.pdf', status: 'verified', uploadDate: '2024-01-15' },
-    degreeCertificate: { name: 'degree.pdf', status: 'pending', uploadDate: '2024-01-20' },
-    marksheet: null,
-    resume: { name: 'resume.pdf', status: 'verified', uploadDate: '2024-01-10' }
-  },
-  jobHistory: [
-    {
-      id: 1,
-      company: 'Tech Corp Ltd',
-      designation: 'Senior Developer',
-      startDate: '2022-01-15',
-      endDate: '2024-01-10',
-      currentlyWorking: false,
-      status: 'verified',
-      documents: {
-        offerLetter: 'offer_tech_corp.pdf',
-        relievingLetter: 'relieving_tech_corp.pdf',
-        payslips: 'payslips_tech_corp.zip'
-      }
-    },
-    {
-      id: 2,
-      company: 'StartUp Inc',
-      designation: 'Full Stack Developer',
-      startDate: '2020-06-01',
-      endDate: '2021-12-31',
-      currentlyWorking: false,
-      status: 'pending',
-      documents: {
-        offerLetter: 'offer_startup.pdf',
-        relievingLetter: null,
-        payslips: 'payslips_startup.zip'
-      }
-    }
-  ]
-});
-
-const updateProfile = async (formData) => {
-  console.log('Updating profile:', Object.fromEntries(formData));
-  return {
-    ...Object.fromEntries(formData),
-    profileImage: formData.get('profileImage') ? URL.createObjectURL(formData.get('profileImage')) : null
-  };
-};
-
-const uploadDocument = async (docType, file) => {
-  console.log('Uploading document:', docType, file.name);
-  return { name: file.name, status: 'pending', uploadDate: new Date().toISOString().split('T')[0] };
-};
-
-const addJobRecord = async (jobData) => {
-  console.log('Adding job record:', jobData);
-  return { ...jobData, id: Date.now(), status: 'pending' };
-};
+import { fetchProfile, updateProfile, uploadDocument, addJobRecord } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const schema = yup.object().shape({
-  fullName: yup.string().required('Full name is required'),
-  email: yup.string().email().required(),
+  firstName: yup.string().required('First name is required'),
+  middleName: yup.string(),
+  lastName: yup.string().required('Last name is required'),
+  fatherName: yup.string().required("Father's name is required"),
+  email: yup.string().email().required('Email is required'),
   phone: yup.string().matches(/^[6-9]\d{9}$/, 'Invalid Indian phone number'),
-  dob: yup.date().required('Date of birth is required'),
+  dateOfBirth: yup.date().required('Date of birth is required'),
+  gender: yup.string().oneOf(['male', 'female', 'other', 'prefer_not_to_say'], 'Invalid gender'),
   pan: yup.string().matches(/[A-Z]{5}[0-9]{4}[A-Z]{1}/, 'Invalid PAN format'),
   aadhaar: yup.string().matches(/^[2-9]{1}[0-9]{11}$/, 'Invalid Aadhaar number'),
-  qualification: yup.string().required(),
-  experience: yup.number().positive().required()
+  qualification: yup.string().required('Qualification is required'),
+  experience: yup.number().positive().required('Experience is required'),
+  designation: yup.string().required('Designation is required'),
+  department: yup.string().required('Department is required'),
+  joiningDate: yup.date().required('Joining date is required'),
+  employmentType: yup.string().oneOf(['full-time', 'part-time', 'contract', 'intern'], 'Invalid employment type'),
+  salary: yup.number().positive('Salary must be positive'),
+  badge: yup.string().oneOf(['Basic', 'Premium', 'None'], 'Invalid badge')
 });
 
 const jobSchema = yup.object().shape({
@@ -111,7 +53,7 @@ const jobSchema = yup.object().shape({
   })
 });
 
-const   Profile=({ hasEditAccess = true }) =>{
+const Profile = ({ hasEditAccess = true }) => {
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm({
     resolver: yupResolver(schema)
   });
@@ -119,11 +61,12 @@ const   Profile=({ hasEditAccess = true }) =>{
     resolver: yupResolver(jobSchema)
   });
 
+  const { user } = useContext(UserContext);
   const [editMode, setEditMode] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState(null);
-  const [verificationStatus, setVerificationStatus] = useState('pending');
+  const [isVerified, setIsVerified] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [imageError, setImageError] = useState('');
@@ -136,15 +79,30 @@ const   Profile=({ hasEditAccess = true }) =>{
     relievingLetter: null,
     payslips: null
   });
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchProfile().then(data => {
-      reset(data);
-      setProfileData(data);
-      setVerificationStatus(data.verificationStatus);
-      if (data.profileImage) setPreview(data.profileImage);
-    });
-  }, [reset]);
+    const loadProfileData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchProfile();
+        reset(data);
+        setProfileData(data);
+        setIsVerified(data.isVerified);
+        if (data.profileImage) setPreview(data.profileImage);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+        setError(err.response?.data?.message || 'Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadProfileData();
+    }
+  }, [reset, user]);
 
   useEffect(() => {
     if (!selectedFile) {
@@ -179,7 +137,11 @@ const   Profile=({ hasEditAccess = true }) =>{
 
     setUploadingDocs(prev => ({ ...prev, [docType]: true }));
     try {
-      const result = await uploadDocument(docType, file);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', docType);
+      
+      const result = await uploadDocument(formData);
       setProfileData(prev => ({
         ...prev,
         documents: {
@@ -187,6 +149,9 @@ const   Profile=({ hasEditAccess = true }) =>{
           [docType]: result
         }
       }));
+    } catch (err) {
+      console.error('Error uploading document:', err);
+      setError(err.response?.data?.message || 'Failed to upload document');
     } finally {
       setUploadingDocs(prev => ({ ...prev, [docType]: false }));
     }
@@ -199,50 +164,63 @@ const   Profile=({ hasEditAccess = true }) =>{
 
   const handleJobSave = async (data) => {
     try {
+      setLoading(true);
       const jobData = {
         ...data,
         currentlyWorking,
-        documents: {
-          offerLetter: jobDocuments.offerLetter ? jobDocuments.offerLetter.name : null,
-          relievingLetter: jobDocuments.relievingLetter ? jobDocuments.relievingLetter.name : null,
-          payslips: jobDocuments.payslips ? jobDocuments.payslips.name : null
-        }
+        documents: jobDocuments
       };
-      const newJob = await addJobRecord(jobData);
+      
+      const result = await addJobRecord(jobData);
       setProfileData(prev => ({
         ...prev,
-        jobHistory: [...prev.jobHistory, newJob]
+        jobHistory: [...(prev.jobHistory || []), result]
       }));
+      
       setJobDialogOpen(false);
       resetJob();
-      setCurrentlyWorking(false);
-      setJobDocuments({ offerLetter: null, relievingLetter: null, payslips: null });
-    } catch (error) {
-      console.error('Error adding job:', error);
-    }
-  };
-
-  const handleSave = async (data) => {
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value);
+      setJobDocuments({
+        offerLetter: null,
+        relievingLetter: null,
+        payslips: null
       });
-      if (selectedFile) formData.append('profileImage', selectedFile);
-
-      const result = await updateProfile(formData);
-      setProfileData(prev => ({ ...prev, ...result }));
-      setPreview(result.profileImage);
-      setVerificationStatus('pending');
-      setConfirmationOpen(false);
-      setEditMode(false);
+    } catch (err) {
+      console.error('Error adding job record:', err);
+      setError(err.response?.data?.message || 'Failed to add job record');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status = verificationStatus) => {
+  const handleSave = async (data) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        if (data[key] !== null && data[key] !== undefined) {
+          formData.append(key, data[key]);
+        }
+      });
+      
+      if (selectedFile) {
+        formData.append('profileImage', selectedFile);
+      }
+      
+      const result = await updateProfile(formData);
+      setProfileData(result);
+      setEditMode(false);
+      setSelectedFile(null);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status = isVerified) => {
     const statusConfig = {
       verified: { color: green[500], icon: <VerifiedUser />, label: 'Verified' },
       pending: { color: orange[500], icon: <PendingActions />, label: 'Under Review' },
@@ -315,7 +293,7 @@ const   Profile=({ hasEditAccess = true }) =>{
                     }}
                     src={preview}
                   >
-                    {!preview && profileData?.fullName?.[0]}
+                    {!preview && `${profileData?.firstName || ''} ${profileData?.lastName || ''}`?.[0]}
                   </Avatar>
                   {editMode && (
                     <CameraAlt sx={{
@@ -342,7 +320,7 @@ const   Profile=({ hasEditAccess = true }) =>{
 
               <Box flex={1}>
                 <Typography variant="h4" component="h1" fontWeight="bold" mb={1}>
-                  {profileData?.fullName || 'My Profile'}
+                  {`${profileData?.firstName || ''} ${profileData?.lastName || ''}` || 'My Profile'}
                 </Typography>
                 <Typography variant="h6" sx={{ opacity: 0.9 }} mb={1}>
                   StaffProof ID: SP-{profileData?.id?.slice(-7).toUpperCase()}
@@ -412,14 +390,24 @@ const   Profile=({ hasEditAccess = true }) =>{
                     <form onSubmit={handleSubmit(() => setConfirmationOpen(true))}>
                       <Grid container spacing={3}>
                         {[
-                          { name: 'fullName', label: 'Full Name', icon: <Person /> },
-                          { name: 'email', label: 'Email', type: 'email', icon: <Person /> },
-                          { name: 'phone', label: 'Phone Number', icon: <Person /> },
-                          { name: 'dob', label: 'Date of Birth', type: 'date', icon: <DateRange /> },
+                          { name: 'firstName', label: 'First Name', icon: <Person /> },
+                          { name: 'middleName', label: 'Middle Name', icon: <Person /> },
+                          { name: 'lastName', label: 'Last Name', icon: <Person /> },
+                          { name: 'fatherName', label: "Father's Name", icon: <Person /> },
+                          { name: 'email', label: 'Email', type: 'email', icon: <Email /> },
+                          { name: 'phone', label: 'Phone Number', icon: <Phone /> },
+                          { name: 'dateOfBirth', label: 'Date of Birth', type: 'date', icon: <DateRange /> },
+                          { name: 'gender', label: 'Gender', icon: <Person /> },
                           { name: 'pan', label: 'PAN Number', icon: <Description /> },
                           { name: 'aadhaar', label: 'Aadhaar Number', icon: <Description /> },
                           { name: 'qualification', label: 'Highest Qualification', icon: <School /> },
                           { name: 'experience', label: 'Experience (years)', type: 'number', icon: <Work /> },
+                          { name: 'designation', label: 'Current Designation', icon: <Work /> },
+                          { name: 'department', label: 'Department', icon: <Business /> },
+                          { name: 'joiningDate', label: 'Joining Date', type: 'date', icon: <DateRange /> },
+                          { name: 'employmentType', label: 'Employment Type', icon: <Work /> },
+                          { name: 'salary', label: 'Salary', type: 'number', icon: <AttachMoney /> },
+                          { name: 'badge', label: 'Badge', icon: <Verified /> },
                         ].map((field) => (
                           <Grid item xs={12} md={6} key={field.name}>
                             <TextField
@@ -474,14 +462,22 @@ const   Profile=({ hasEditAccess = true }) =>{
                 {!editMode && (
                   <Grid container spacing={2}>
                     {[
-                      { label: 'Full Name', value: profileData?.fullName },
+                      { label: 'Full Name', value: `${profileData?.firstName || ''} ${profileData?.lastName || ''}`.trim() },
+                      { label: "Father's Name", value: profileData?.fatherName },
                       { label: 'Email', value: profileData?.email },
                       { label: 'Phone', value: profileData?.phone },
-                      { label: 'Date of Birth', value: profileData?.dob },
+                      { label: 'Date of Birth', value: profileData?.dateOfBirth },
+                      { label: 'Gender', value: profileData?.gender },
                       { label: 'PAN Number', value: maskSensitiveInfo(profileData?.pan, 'pan') },
                       { label: 'Aadhaar', value: maskSensitiveInfo(profileData?.aadhaar, 'aadhaar') },
                       { label: 'Qualification', value: profileData?.qualification },
-                      { label: 'Experience', value: `${profileData?.experience} years` }
+                      { label: 'Experience', value: `${profileData?.experience} years` },
+                      { label: 'Designation', value: profileData?.designation },
+                      { label: 'Department', value: profileData?.department },
+                      { label: 'Joining Date', value: profileData?.joiningDate },
+                      { label: 'Employment Type', value: profileData?.employmentType },
+                      { label: 'Salary', value: profileData?.salary ? `₹${profileData.salary}` : 'Not specified' },
+                      { label: 'Badge', value: profileData?.badge }
                     ].map((item, index) => (
                       <Grid item xs={12} md={6} key={index}>
                         <Box sx={{ p: 2, backgroundColor: teal[25], borderRadius: 2 }}>

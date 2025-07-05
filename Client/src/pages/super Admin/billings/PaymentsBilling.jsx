@@ -144,28 +144,28 @@ const PaymentsBilling = () => {
           showToast(
             "success",
             "Invoice Generated",
-            `Invoice for ${payment.user} has been downloaded`
+            `Invoice for ${payment.firstName} ${payment.lastName} has been downloaded`
           );
           break;
 
         case "refund":
           if (
             window.confirm(
-              `Refund $${payment.amount.toFixed(2)} to ${payment.user}?`
+              `Refund $${payment.amount.toFixed(2)} to ${payment.firstName} ${payment.lastName}?`
             )
           ) {
             await refundBilling(payment.id);
             showToast(
               "success",
               "Refund Processed",
-              `Refunded $${payment.amount.toFixed(2)} to ${payment.user}`
+              `Refunded $${payment.amount.toFixed(2)} to ${payment.firstName} ${payment.lastName}`
             );
           }
           break;
 
         case "adjust":
           const newAmount = prompt(
-            `New amount for ${payment.user} (Current: $${payment.amount.toFixed(
+            `New amount for ${payment.firstName} ${payment.lastName} (Current: $${payment.amount.toFixed(
               2
             )}):`
           );
@@ -176,7 +176,7 @@ const PaymentsBilling = () => {
               showToast(
                 "success",
                 "Amount Adjusted",
-                `Updated to $${amount.toFixed(2)} for ${payment.user}`
+                `Updated to $${amount.toFixed(2)} for ${payment.firstName} ${payment.lastName}`
               );
             } else {
               throw new Error("Amount must be positive");
@@ -477,7 +477,7 @@ const PaymentsBilling = () => {
                       <TableCell sx={{ fontWeight: "medium" }}>
                         {payment.id}
                       </TableCell>
-                      <TableCell>{payment.user}</TableCell>
+                      <TableCell>{`${payment.firstName} ${payment.lastName}`}</TableCell>
                       <TableCell>{payment.user_type}</TableCell>
                       <TableCell>{payment.service}</TableCell>
                       <TableCell>${payment.amount.toFixed(2)}</TableCell>

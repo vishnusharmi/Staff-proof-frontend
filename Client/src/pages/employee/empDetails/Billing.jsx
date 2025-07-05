@@ -1,135 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { fetchBillingHistory, downloadInvoice } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const BillingHistory = () => {
-  // Sample billing data - in real app this would come from API
-  const [billingData] = useState([
-    {
-      id: 1,
-      invoiceNumber: 'INV-2024-001',
-      date: '2024-03-15',
-      description: 'Profile Edit Access',
-      amount: 299,
-      gst: 53.82,
-      total: 352.82,
-      status: 'Paid'
-    },
-    {
-      id: 2,
-      invoiceNumber: 'INV-2024-002',
-      date: '2024-03-20',
-      description: 'Priority Verification',
-      amount: 599,
-      gst: 107.82,
-      total: 706.82,
-      status: 'Paid'
-    },
-    {
-      id: 3,
-      invoiceNumber: 'INV-2024-003',
-      date: '2024-04-01',
-      description: 'Premium Profile Badge',
-      amount: 199,
-      gst: 35.82,
-      total: 234.82,
-      status: 'Paid'
-    },
-    {
-      id: 4,
-      invoiceNumber: 'INV-2024-004',
-      date: '2024-04-10',
-      description: 'Document Backup Service',
-      amount: 149,
-      gst: 26.82,
-      total: 175.82,
-      status: 'Paid'
-    },
-    {
-      id: 5,
-      invoiceNumber: 'INV-2024-005',
-      date: '2024-04-15',
-      description: 'Extended Visibility (3 months)',
-      amount: 899,
-      gst: 161.82,
-      total: 1060.82,
-      status: 'Paid'
-    },
-    {
-      id: 6,
-      invoiceNumber: 'INV-2024-006',
-      date: '2024-05-01',
-      description: 'Profile Analytics',
-      amount: 399,
-      gst: 71.82,
-      total: 470.82,
-      status: 'Paid'
-    },
-    {
-      id: 7,
-      invoiceNumber: 'INV-2024-007',
-      date: '2024-05-10',
-      description: 'Resume Enhancement',
-      amount: 499,
-      gst: 89.82,
-      total: 588.82,
-      status: 'Paid'
-    },
-    {
-      id: 8,
-      invoiceNumber: 'INV-2024-008',
-      date: '2024-05-20',
-      description: 'Multiple Profile Access',
-      amount: 799,
-      gst: 143.82,
-      total: 942.82,
-      status: 'Paid'
-    },
-    {
-      id: 9,
-      invoiceNumber: 'INV-2024-009',
-      date: '2024-06-01',
-      description: 'Document Verification Rush',
-      amount: 699,
-      gst: 125.82,
-      total: 824.82,
-      status: 'Paid'
-    },
-    {
-      id: 10,
-      invoiceNumber: 'INV-2024-010',
-      date: '2024-06-15',
-      description: 'Premium Support Package',
-      amount: 999,
-      gst: 179.82,
-      total: 1178.82,
-      status: 'Paid'
-    }
-  ]);
-
+  const [billingData, setBillingData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Calculate pagination
-  const totalPages = Math.ceil(billingData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = billingData.slice(startIndex, endIndex);
+  const { user } = useContext(UserContext);
+
+  useEffect(() => {
+    const loadBillingHistory = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetchBillingHistory({
+          page: currentPage,
+          limit: itemsPerPage
+        });
+        setBillingData(response.data || []);
+        
+      } catch (err) {
+        console.error('Error loading billing history:', err);
+        setError(err.response?.data?.message || 'Failed to load billing history');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadBillingHistory();
+    }
+  }, [user, currentPage]);
 
   const handlePrevious = () => {
     setCurrentPage(prev => Math.max(prev - 1, 1));
   };
 
   const handleNext = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    setCurrentPage(prev => prev + 1);
   };
 
   const handlePageClick = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
-  const handleDownloadInvoice = (invoiceNumber) => {
-    // In real app, this would trigger PDF download
-    alert(`Downloading invoice ${invoiceNumber}`);
+  const handleDownloadInvoice = async (invoiceNumber) => {
+    try {
+      const response = await downloadInvoice(invoiceNumber);
+      
+      // Create blob and download
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (err) {
+      console.error('Error downloading invoice:', err);
+      alert('Failed to download invoice. Please try again.');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -146,6 +84,38 @@ const BillingHistory = () => {
       currency: 'INR'
     }).format(amount);
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 bg-white">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading billing history...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-6 bg-white">
+        <div className="text-center py-8">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white">
@@ -187,7 +157,7 @@ const BillingHistory = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentData.map((item) => (
+              {billingData.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
@@ -210,7 +180,7 @@ const BillingHistory = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-900">
                       {formatCurrency(item.gst)}
                     </div>
                   </td>
@@ -220,14 +190,18 @@ const BillingHistory = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      item.status === 'Paid' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
                       {item.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <button
                       onClick={() => handleDownloadInvoice(item.invoiceNumber)}
-                      className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       <Download className="w-3 h-3 mr-1" />
                       Download
@@ -238,72 +212,50 @@ const BillingHistory = () => {
             </tbody>
           </table>
         </div>
-      </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-6">
-        <div className="text-sm text-gray-700">
-          Showing {startIndex + 1} to {Math.min(endIndex, billingData.length)} of {billingData.length} entries
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handlePrevious}
-            disabled={currentPage === 1}
-            className={`inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium ${
-              currentPage === 1
-                ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                : 'text-gray-700 bg-white hover:bg-gray-50'
-            }`}
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Previous
-          </button>
-
-          <div className="flex space-x-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
-              <button
-                key={pageNumber}
-                onClick={() => handlePageClick(pageNumber)}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  currentPage === pageNumber
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {pageNumber}
-              </button>
-            ))}
+        {/* Pagination */}
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={billingData.length < itemsPerPage}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
           </div>
-
-          <button
-            onClick={handleNext}
-            disabled={currentPage === totalPages}
-            className={`inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium ${
-              currentPage === totalPages
-                ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                : 'text-gray-700 bg-white hover:bg-gray-50'
-            }`}
-          >
-            Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Card */}
-      <div className="mt-6 bg-blue-50 rounded-lg p-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">Total Spent</h3>
-            <p className="text-sm text-gray-600">Lifetime payment summary</p>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(billingData.reduce((sum, item) => sum + item.total, 0))}
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing page <span className="font-medium">{currentPage}</span>
+              </p>
             </div>
-            <div className="text-sm text-gray-500">
-              GST: {formatCurrency(billingData.reduce((sum, item) => sum + item.gst, 0))}
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={handlePrevious}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Previous</span>
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={billingData.length < itemsPerPage}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Next</span>
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </nav>
             </div>
           </div>
         </div>

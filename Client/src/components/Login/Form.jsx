@@ -7,11 +7,11 @@ import { UserContext } from "../context/UseContext";
 
 const Form = () => {
   const { user, error, login } = useContext(UserContext);
-  console.log(login());
-  
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
+
+  console.log("Form component rendered", { user, error });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,13 +38,17 @@ const Form = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Login attempt with:", loginData);
+    
     if (!validateForm()) return;
     setLoading(true);
     try {
-      const success = login(
+      const success = await login(
         loginData.email,
         loginData.password,
       ); 
+      console.log("Login result:", success);
+      
       if (success) {
         toast.success("Login successful!");
         // setTimeout(
@@ -52,10 +56,11 @@ const Form = () => {
         //   1500
         // );
       } else {
-        toast.error("Invalid credentials or role!");
+        toast.error(error || "Invalid credentials or role!");
       }
     } catch (err) {
-      toast.error("Login failed!");
+      console.error("Login error:", err);
+      toast.error(error || "Login failed!");
     } finally {
       setLoading(false);
     }

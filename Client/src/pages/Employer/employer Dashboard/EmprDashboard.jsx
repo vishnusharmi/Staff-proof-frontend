@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   Users, 
   Shield, 
@@ -12,13 +12,50 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { fetchDashboard, fetchCompany } from '../../../components/api/api';
+import { UserContext } from '../../../components/context/UseContext';
 
 const EmprDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [companyData, setCompanyData] = useState(null);
   const itemsPerPage = 5;
 
-  // Mock data for recent activities
-  const recentActivities = [
+  const { user } = useContext(UserContext);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch dashboard data for employer role
+        const dashboardResponse = await fetchDashboard('employer');
+        setDashboardData(dashboardResponse);
+        
+        // Fetch company data if user has company
+        if (user?.company) {
+          const companyResponse = await fetchCompany(user.company);
+          setCompanyData(companyResponse);
+        }
+        
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  // Use real data or fallback to mock data structure
+  const recentActivities = dashboardData?.recentActivities || [
     {
       id: 1,
       type: 'access_request',
@@ -32,50 +69,22 @@ const EmprDashboard = () => {
       message: 'Blacklisted Jane Smith (SP-789012)',
       timestamp: '2025-07-01 13:15:00',
       status: 'approved'
-    },
-    {
-      id: 3,
-      type: 'access_granted',
-      message: 'Access Request Approved by Mike Johnson (SP-345678)',
-      timestamp: '2025-07-01 12:45:00',
-      status: 'approved'
-    },
-    {
-      id: 4,
-      type: 'verification',
-      message: 'Employee Sarah Wilson (SP-901234) verified documents',
-      timestamp: '2025-07-01 11:20:00',
-      status: 'completed'
-    },
-    {
-      id: 5,
-      type: 'access_denied',
-      message: 'Access Request Denied by Tom Brown (SP-567890)',
-      timestamp: '2025-07-01 10:30:00',
-      status: 'denied'
-    },
-    {
-      id: 6,
-      type: 'search',
-      message: 'Searched employee with ID SP-111222',
-      timestamp: '2025-07-01 09:15:00',
-      status: 'completed'
-    },
-    {
-      id: 7,
-      type: 'access_request',
-      message: 'Sent Access Request to Lisa Davis (SP-333444)',
-      timestamp: '2025-06-30 16:45:00',
-      status: 'pending'
-    },
-    {
-      id: 8,
-      type: 'verification',
-      message: 'Employee Robert Lee (SP-555666) completed verification',
-      timestamp: '2025-06-30 15:30:00',
-      status: 'completed'
     }
   ];
+
+  const stats = dashboardData?.stats || {
+    employeesVerified: 324,
+    accessRequests: 89,
+    blacklistedEmployees: 12,
+    pendingVerifications: 5
+  };
+
+  const subscription = dashboardData?.subscription || {
+    plan: 'Pro Plan',
+    lookupsUsed: 147,
+    totalLookups: 250,
+    expiresAt: '2026-03-15'
+  };
 
   const totalPages = Math.ceil(recentActivities.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -115,6 +124,36 @@ const EmprDashboard = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <AlertCircle size={48} className="mx-auto" />
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -123,7 +162,7 @@ const EmprDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Welcome, TechCorp Solutions
+                Welcome, {companyData?.name || user?.companyName || 'Company'}
               </h1>
               <p className="text-sm text-gray-600 mt-1">
                 Manage your employee verification dashboard
@@ -144,9 +183,9 @@ const EmprDashboard = () => {
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 mb-8 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold mb-2">Pro Plan Active</h3>
-              <p className="text-blue-100">Employee Lookups Used: 147/250</p>
-              <p className="text-blue-100">Expires: March 15, 2026</p>
+              <h3 className="text-lg font-semibold mb-2">{subscription.plan} Active</h3>
+              <p className="text-blue-100">Employee Lookups Used: {subscription.lookupsUsed}/{subscription.totalLookups}</p>
+              <p className="text-blue-100">Expires: {new Date(subscription.expiresAt).toLocaleDateString()}</p>
             </div>
             <div className="text-right">
               <CreditCard className="w-8 h-8 mb-2 opacity-80" />
@@ -176,7 +215,7 @@ const EmprDashboard = () => {
               <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Employees Verified
               </p>
-              <p className="text-4xl font-bold text-gray-900 mb-2">324</p>
+              <p className="text-4xl font-bold text-gray-900 mb-2">{stats.employeesVerified}</p>
               <p className="text-sm text-gray-500">Total verified employees</p>
             </div>
           </div>
@@ -196,7 +235,7 @@ const EmprDashboard = () => {
               <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Access Requests
               </p>
-              <p className="text-4xl font-bold text-gray-900 mb-2">89</p>
+              <p className="text-4xl font-bold text-gray-900 mb-2">{stats.accessRequests}</p>
               <p className="text-sm text-gray-500">Total requests sent</p>
             </div>
           </div>
@@ -216,7 +255,7 @@ const EmprDashboard = () => {
               <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Blacklisted
               </p>
-              <p className="text-4xl font-bold text-gray-900 mb-2">7</p>
+              <p className="text-4xl font-bold text-gray-900 mb-2">{stats.blacklistedEmployees}</p>
               <p className="text-sm text-gray-500">Total blacklisted</p>
             </div>
           </div>
@@ -236,106 +275,11 @@ const EmprDashboard = () => {
               <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">
                 Verifications
               </p>
-              <p className="text-4xl font-bold text-gray-900 mb-2">156</p>
+              <p className="text-4xl font-bold text-gray-900 mb-2">{stats.pendingVerifications}</p>
               <p className="text-sm text-gray-500">Document verifications</p>
             </div>
           </div>
         </div>
-{/* 
-        Enhanced Recent Activity */}
-        {/* <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-8 py-6">
-            <h2 className="text-xl font-bold text-white">Recent Activity</h2>
-            <p className="text-slate-300 mt-1">
-              Track your latest actions and updates
-            </p>
-          </div>
-
-          <div className="p-8">
-            <div className="space-y-6">
-              {currentActivities.map((activity, index) => (
-                <div
-                  key={activity.id}
-                  className={`flex items-start space-x-6 p-6 rounded-xl transition-all duration-300 hover:shadow-md ${
-                    index % 2 === 0
-                      ? "bg-gradient-to-r from-blue-50 to-indigo-50"
-                      : "bg-gradient-to-r from-purple-50 to-pink-50"
-                  }`}
-                >
-                  <div className="flex-shrink-0 mt-1">
-                    <div className="p-3 bg-white rounded-full shadow-md">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <p className="text-base font-semibold text-gray-900 mb-1">
-                      {activity.message}
-                    </p>
-                    <p className="text-sm text-gray-600 flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {activity.timestamp}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {getStatusBadge(activity.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-          
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-              <div className="text-base text-gray-700 font-medium">
-                Showing{" "}
-                <span className="font-bold text-blue-600">
-                  {startIndex + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-bold text-blue-600">
-                  {Math.min(startIndex + itemsPerPage, recentActivities.length)}
-                </span>{" "}
-                of{" "}
-                <span className="font-bold text-blue-600">
-                  {recentActivities.length}
-                </span>{" "}
-                activities
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100 rounded-lg"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                      currentPage === i + 1
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-105"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-gray-100 rounded-lg"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div> */}
       </div>
     </div>
   );
