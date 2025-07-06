@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle,
   User,
@@ -8,6 +8,8 @@ import {
   Plus,
   Trash2,
   Briefcase,
+  RefreshCw,
+  Copy,
 } from "lucide-react";
 import { createEmployee } from "../../../components/api/api";
 import { toast } from 'react-hot-toast';
@@ -40,6 +42,9 @@ export default function AddEmployee() {
       certificate: null,
     },
 
+    // Certificates (multiple documents)
+    certificates: [],
+
     // Current Position Details
     designation: "",
     department: "",
@@ -48,10 +53,48 @@ export default function AddEmployee() {
     employmentType: "",
     salary: "",
     offerLetter: null,
+
+    // Password field
+    password: "",
+    showPassword: false,
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Generate password on component mount
+  useEffect(() => {
+    if (!formData.password) {
+      generatePassword();
+    }
+  }, []);
+
+  // Generate random password
+  const generatePassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    setFormData({
+      ...formData,
+      password: password
+    });
+    toast.success('Password generated successfully!');
+  };
+
+  // Copy password to clipboard
+  const copyPassword = async () => {
+    if (formData.password) {
+      try {
+        await navigator.clipboard.writeText(formData.password);
+        toast.success('Password copied to clipboard!');
+      } catch (err) {
+        toast.error('Failed to copy password');
+      }
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -84,6 +127,61 @@ export default function AddEmployee() {
     }
   };
 
+  // Add certificate
+  const addCertificate = () => {
+    setFormData({
+      ...formData,
+      certificates: [
+        ...formData.certificates,
+        {
+          id: Date.now(),
+          name: "",
+          institution: "",
+          issueDate: "",
+          expiryDate: "",
+          file: null
+        }
+      ]
+    });
+  };
+
+  // Remove certificate
+  const removeCertificate = (index) => {
+    setFormData({
+      ...formData,
+      certificates: formData.certificates.filter((_, i) => i !== index)
+    });
+  };
+
+  // Update certificate
+  const updateCertificate = (index, field, value) => {
+    const updatedCertificates = [...formData.certificates];
+    updatedCertificates[index] = {
+      ...updatedCertificates[index],
+      [field]: value
+    };
+    setFormData({
+      ...formData,
+      certificates: updatedCertificates
+    });
+  };
+
+  // Handle certificate file change
+  const handleCertificateFileChange = (index, e) => {
+    const { files } = e.target;
+    if (files && files.length > 0) {
+      const updatedCertificates = [...formData.certificates];
+      updatedCertificates[index] = {
+        ...updatedCertificates[index],
+        file: files[0]
+      };
+      setFormData({
+        ...formData,
+        certificates: updatedCertificates
+      });
+    }
+  };
+
   const handleFileChange = (e) => {
     const { name, files } = e.target;
     if (files && files.length > 0) {
@@ -92,6 +190,13 @@ export default function AddEmployee() {
         [name]: files[0],
       });
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setFormData({
+      ...formData,
+      showPassword: !formData.showPassword
+    });
   };
 
   const validateStep = (step) => {
@@ -120,6 +225,13 @@ export default function AddEmployee() {
       }
       if (!formData.phone.trim()) {
         stepErrors.phone = "Phone number is required";
+        isValid = false;
+      }
+      if (!formData.password.trim()) {
+        stepErrors.password = "Password is required";
+        isValid = false;
+      } else if (formData.password.length < 8) {
+        stepErrors.password = "Password must be at least 8 characters long";
         isValid = false;
       }
     } else if (step === 2) {
@@ -193,6 +305,7 @@ export default function AddEmployee() {
         formDataToSend.append('endDate', formData.endDate);
         formDataToSend.append('employmentType', formData.employmentType);
         formDataToSend.append('salary', formData.salary);
+        formDataToSend.append('password', formData.password);
         
         // Add education fields
         formDataToSend.append('education[degree]', formData.education.degree);
@@ -218,6 +331,17 @@ export default function AddEmployee() {
         if (formData.education.certificate) {
           formDataToSend.append('educationCertificate', formData.education.certificate);
         }
+
+        // Add certificates
+        formData.certificates.forEach((cert, index) => {
+          formDataToSend.append(`certificates[${index}][name]`, cert.name);
+          formDataToSend.append(`certificates[${index}][institution]`, cert.institution);
+          formDataToSend.append(`certificates[${index}][issueDate]`, cert.issueDate);
+          formDataToSend.append(`certificates[${index}][expiryDate]`, cert.expiryDate);
+          if (cert.file) {
+            formDataToSend.append(`certificates[${index}][file]`, cert.file);
+          }
+        });
 
         const response = await createEmployee(formDataToSend);
         
@@ -247,6 +371,7 @@ export default function AddEmployee() {
               grade: "",
               certificate: null,
             },
+            certificates: [],
             designation: "",
             department: "",
             joiningDate: "",
@@ -254,6 +379,8 @@ export default function AddEmployee() {
             employmentType: "",
             salary: "",
             offerLetter: null,
+            password: "",
+            showPassword: false,
           });
           setCurrentStep(1);
         } else {
@@ -482,6 +609,60 @@ export default function AddEmployee() {
                 </div>
               </div>
             </div>
+
+            {/* Password Generator */}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <RefreshCw size={20} className="mr-2" />
+                Password
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                    Generated Password
+                  </label>
+                  <div className="flex items-center bg-gray-100 p-3 border border-gray-300 rounded-lg">
+                    <input
+                      type={formData.showPassword ? "text" : "password"}
+                      value={formData.password}
+                      className="flex-1 bg-transparent outline-none"
+                      readOnly
+                    />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="ml-2 text-gray-600 hover:text-gray-800"
+                      title={formData.showPassword ? "Hide Password" : "Show Password"}
+                    >
+                      <Eye size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={copyPassword}
+                      className="ml-2 text-gray-600 hover:text-gray-800"
+                      title="Copy Password"
+                    >
+                      <Copy size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={generatePassword}
+                      className="ml-2 text-gray-600 hover:text-gray-800"
+                      title="Generate New Password"
+                    >
+                      <RefreshCw size={20} />
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                  )}
+                  <p className="text-xs text-gray-600 mt-2">
+                    💡 The generated password will be sent to the employee's email address. 
+                    They can change it after their first login.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         );
 
@@ -586,6 +767,117 @@ export default function AddEmployee() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
+            </div>
+
+            {/* Certificates Section */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Certificates</h3>
+                <button
+                  type="button"
+                  onClick={addCertificate}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add Certificate
+                </button>
+              </div>
+
+              {formData.certificates.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <p className="text-gray-500">No certificates added yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Click "Add Certificate" to add certificates</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {formData.certificates.map((cert, index) => (
+                    <div key={cert.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-medium text-gray-800">Certificate {index + 1}</h4>
+                        <button
+                          type="button"
+                          onClick={() => removeCertificate(index)}
+                          className="text-red-600 hover:text-red-800 transition"
+                          title="Remove Certificate"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-gray-700">
+                            Certificate Name*
+                          </label>
+                          <input
+                            type="text"
+                            value={cert.name}
+                            onChange={(e) => updateCertificate(index, 'name', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="e.g., AWS Certified Solutions Architect"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-gray-700">
+                            Issuing Institution*
+                          </label>
+                          <input
+                            type="text"
+                            value={cert.institution}
+                            onChange={(e) => updateCertificate(index, 'institution', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="e.g., Amazon Web Services"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-gray-700">
+                            Issue Date
+                          </label>
+                          <input
+                            type="date"
+                            value={cert.issueDate}
+                            onChange={(e) => updateCertificate(index, 'issueDate', e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-gray-700">
+                            Expiry Date
+                          </label>
+                                                      <input
+                              type="date"
+                              value={cert.expiryDate}
+                              onChange={(e) => updateCertificate(index, 'expiryDate', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            />
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium mb-2 text-gray-700">
+                          Certificate File
+                        </label>
+                        <input
+                          type="file"
+                          onChange={(e) => handleCertificateFileChange(index, e)}
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                        />
+                        {cert.file && (
+                          <p className="text-xs text-green-600 mt-1">
+                            ✓ File selected: {cert.file.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -941,6 +1233,8 @@ export default function AddEmployee() {
                 resume: null,
                 aadharCard: null,
                 panCard: null,
+                password: "",
+                showPassword: false,
               });
               setCurrentStep(1);
               setIsSubmitted(false);

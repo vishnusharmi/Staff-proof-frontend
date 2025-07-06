@@ -8,18 +8,15 @@ const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
-    fetchUnreadCount();
-    
-    // Temporarily disable polling to test continuous reloading
-    // const interval = setInterval(() => {
-    //   fetchUnreadCount();
-    // }, 120000); // Check every 2 minutes
-
-    // return () => clearInterval(interval);
-  }, []);
+    if (!hasInitialized) {
+      fetchNotifications();
+      fetchUnreadCount();
+      setHasInitialized(true);
+    }
+  }, [hasInitialized]);
 
   const fetchNotifications = async () => {
     try {
@@ -34,6 +31,7 @@ const NotificationBell = () => {
       setNotifications(response.data.notifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      // Don't update state on error to prevent re-renders
     } finally {
       setLoading(false);
     }
@@ -45,6 +43,7 @@ const NotificationBell = () => {
       setUnreadCount(response.data.count);
     } catch (error) {
       console.error('Error fetching unread count:', error);
+      // Don't update state on error to prevent re-renders
     }
   };
 
@@ -58,9 +57,11 @@ const NotificationBell = () => {
             : notif
         )
       );
-      fetchUnreadCount();
+      // Update unread count locally instead of making another API call
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      // Don't throw error to prevent infinite loops
     }
   };
 
@@ -70,9 +71,11 @@ const NotificationBell = () => {
       setNotifications(prev => 
         prev.map(notif => ({ ...notif, read: true, readAt: new Date() }))
       );
-      fetchUnreadCount();
+      // Update unread count locally instead of making another API call
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+      // Don't throw error to prevent infinite loops
     }
   };
 
@@ -80,9 +83,14 @@ const NotificationBell = () => {
     try {
       await api.delete(`/api/notifications/${notificationId}`);
       setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
-      fetchUnreadCount();
+      // Update unread count locally if needed
+      setUnreadCount(prev => {
+        const deletedNotification = notifications.find(n => n._id === notificationId);
+        return deletedNotification && !deletedNotification.read ? Math.max(0, prev - 1) : prev;
+      });
     } catch (error) {
       console.error('Error deleting notification:', error);
+      // Don't throw error to prevent infinite loops
     }
   };
 

@@ -8,6 +8,7 @@ import {
   Shield,
   Edit,
   Trash2,
+  Plus,
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { fetchEmployees, updateEmployee, deleteEmployee, searchEmployees } from "../../../components/api/api";
@@ -30,6 +31,7 @@ export default function EmployeeTable() {
   const [editEmployee, setEditEmployee] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [editErrors, setEditErrors] = useState({});
+  const [editCertificates, setEditCertificates] = useState([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const [records, setRecords] = useState([]);
@@ -107,6 +109,7 @@ export default function EmployeeTable() {
       salary: employee.salary || "",
       offerLetter: null,
     });
+    setEditCertificates(employee.certificates || []);
     setEditModalOpen(true);
   };
 
@@ -148,6 +151,49 @@ export default function EmployeeTable() {
         ...editForm,
         [name]: files[0].name,
       });
+    }
+  };
+
+  // Add certificate
+  const addEditCertificate = () => {
+    setEditCertificates([
+      ...editCertificates,
+      {
+        id: Date.now(),
+        name: "",
+        institution: "",
+        issueDate: "",
+        expiryDate: "",
+        file: null
+      }
+    ]);
+  };
+
+  // Remove certificate
+  const removeEditCertificate = (index) => {
+    setEditCertificates(editCertificates.filter((_, i) => i !== index));
+  };
+
+  // Update certificate
+  const updateEditCertificate = (index, field, value) => {
+    const updatedCertificates = [...editCertificates];
+    updatedCertificates[index] = {
+      ...updatedCertificates[index],
+      [field]: value
+    };
+    setEditCertificates(updatedCertificates);
+  };
+
+  // Handle certificate file change
+  const handleEditCertificateFileChange = (index, e) => {
+    const { files } = e.target;
+    if (files && files.length > 0) {
+      const updatedCertificates = [...editCertificates];
+      updatedCertificates[index] = {
+        ...updatedCertificates[index],
+        file: files[0]
+      };
+      setEditCertificates(updatedCertificates);
     }
   };
 
@@ -265,6 +311,17 @@ export default function EmployeeTable() {
       if (editForm.education.certificate) {
         formData.append('educationCertificate', editForm.education.certificate);
       }
+
+      // Add certificates
+      editCertificates.forEach((cert, index) => {
+        formData.append(`certificates[${index}][name]`, cert.name);
+        formData.append(`certificates[${index}][institution]`, cert.institution);
+        formData.append(`certificates[${index}][issueDate]`, cert.issueDate);
+        formData.append(`certificates[${index}][expiryDate]`, cert.expiryDate);
+        if (cert.file) {
+          formData.append(`certificates[${index}][file]`, cert.file);
+        }
+      });
 
       const response = await updateEmployee(editEmployee._id, formData);
       
@@ -842,6 +899,116 @@ export default function EmployeeTable() {
                   <p className="text-xs text-gray-500 mt-1">Upload degree certificate or transcript (PDF, DOC, DOCX, JPG, PNG - Max: 5MB)</p>
                   {editForm.education.certificate && <div className="text-xs text-gray-600 mt-1">Current: {editForm.education.certificate}</div>}
                 </div>
+              </div>
+              {/* Certificates Section */}
+              <div className="border border-gray-200 rounded-lg p-6 bg-gray-50 mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Certificates</h3>
+                  <button
+                    type="button"
+                    onClick={addEditCertificate}
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Certificate
+                  </button>
+                </div>
+
+                {editCertificates.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <p className="text-gray-500">No certificates added yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Click "Add Certificate" to add certificates</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {editCertificates.map((cert, index) => (
+                      <div key={cert.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-gray-800">Certificate {index + 1}</h4>
+                          <button
+                            type="button"
+                            onClick={() => removeEditCertificate(index)}
+                            className="text-red-600 hover:text-red-800 transition"
+                            title="Remove Certificate"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">
+                              Certificate Name*
+                            </label>
+                            <input
+                              type="text"
+                              value={cert.name}
+                              onChange={(e) => updateEditCertificate(index, 'name', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                              placeholder="e.g., AWS Certified Solutions Architect"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">
+                              Issuing Institution*
+                            </label>
+                            <input
+                              type="text"
+                              value={cert.institution}
+                              onChange={(e) => updateEditCertificate(index, 'institution', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                              placeholder="e.g., Amazon Web Services"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">
+                              Issue Date
+                            </label>
+                            <input
+                              type="date"
+                              value={cert.issueDate}
+                              onChange={(e) => updateEditCertificate(index, 'issueDate', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700">
+                              Expiry Date
+                            </label>
+                            <input
+                              type="date"
+                              value={cert.expiryDate}
+                              onChange={(e) => updateEditCertificate(index, 'expiryDate', e.target.value)}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium mb-2 text-gray-700">
+                            Certificate File
+                          </label>
+                          <input
+                            type="file"
+                            onChange={(e) => handleEditCertificateFileChange(index, e)}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                          />
+                          {cert.file && (
+                            <p className="text-xs text-green-600 mt-1">
+                              ✓ File selected: {cert.file.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               {/* Position Details */}
               <div className="space-y-6">

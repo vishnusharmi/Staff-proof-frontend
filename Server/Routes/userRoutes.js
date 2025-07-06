@@ -708,12 +708,14 @@ router.post('/register', upload.fields([
   { name: 'aadharCard', maxCount: 5 },
   { name: 'panCard', maxCount: 5 },
   { name: 'offerLetter', maxCount: 5 },
-  { name: 'educationCertificate', maxCount: 5 }
+  { name: 'educationCertificate', maxCount: 5 },
+  // Certificates (multiple files)
+  { name: 'certificates', maxCount: 20 }
 ]), asyncHandler(async (req, res) => {
   try {
     const { userType, formData } = req.body;
     
-    if (!userType || !['employee', 'company', 'verifier', 'admin'].includes(userType)) {
+    if (!userType || !['employee', 'company', 'verifier', 'admin', 'employer_employee'].includes(userType)) {
       return sendErrorResponse(res, 400, 'Invalid user type');
     }
 
@@ -735,6 +737,8 @@ router.post('/register', upload.fields([
       existingEmail = parsedFormData.verifier?.basic?.email;
     } else if (userType === 'admin') {
       existingEmail = parsedFormData.admin?.basic?.email;
+    } else if (userType === 'employer_employee') {
+      existingEmail = parsedFormData.employee?.email;
     }
 
     if (existingEmail) {
@@ -756,14 +760,15 @@ router.post('/register', upload.fields([
       // New employee management document fields
       aadharCard: [],
       panCard: [],
-      offerLetter: []
+      offerLetter: [],
+      certificates: []
     };
 
     let profilePictureUrl = null;
 
     if (req.files) {
       // Process employee files
-      if (userType === 'employee') {
+      if (userType === 'employee' || userType === 'employer_employee') {
         if (req.files.resume) {
           processedDocuments.resume = req.files.resume.map(file => ({
             filename: file.filename,
@@ -834,6 +839,16 @@ router.post('/register', upload.fields([
             url: `/uploads/users/employee/${file.filename}`
           }));
         }
+        
+        if (req.files.certificates) {
+          processedDocuments.certificates = req.files.certificates.map(file => ({
+            filename: file.filename,
+            originalName: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size,
+            url: `/uploads/users/employee/${file.filename}`
+          }));
+        }
       }
 
       // Process company files
@@ -890,10 +905,11 @@ router.post('/register', upload.fields([
 
     // Create user data
     let userData = {
-      role: userType === 'employee' ? 'Employee' : 
+      role: userType === 'employee' || userType === 'employer_employee' ? 'Employee' : 
             userType === 'company' ? 'Employer' : 
             userType === 'verifier' ? 'Verifier' : 'Admin',
-      status: userType === 'verifier' || userType === 'admin' ? 'active' : 'pending',
+      status: userType === 'verifier' || userType === 'admin' ? 'active' : 
+              userType === 'employer_employee' ? 'active' : 'pending',
       documents: processedDocuments,
       profilePicture: profilePictureUrl,
       ipAddress: req.ip,
@@ -955,6 +971,63 @@ router.post('/register', upload.fields([
         })) || [],
         // Generate a temporary password
         password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+      };
+    } else if (userType === 'employer_employee') {
+      // Handle employee creation by employer with flat data structure
+      const emp = parsedFormData.employee;
+      
+      // Generate StaffProof ID
+      let staffProofId;
+      do {
+        staffProofId = 'SP-' + Math.floor(Math.random() * 900000) + 100000;
+      } while (await User.findOne({ staffProofId }));
+      
+      // Generate employee ID
+      let employeeId;
+      do {
+        employeeId = 'EMP' + Math.floor(Math.random() * 900000) + 100000;
+      } while (await User.findOne({ employeeId }));
+      
+      userData = {
+        ...userData,
+        firstName: emp.firstName || '',
+        middleName: emp.middleName || '',
+        lastName: emp.lastName || '',
+        fatherName: emp.fatherName || '',
+        email: emp.email,
+        phone: emp.phone,
+        dateOfBirth: emp.dateOfBirth,
+        gender: emp.gender?.toLowerCase(),
+        address: parsedFormData.address || '',
+        staffProofId,
+        employeeId,
+        designation: emp.designation || '',
+        department: emp.department || '',
+        joiningDate: emp.joiningDate ? new Date(emp.joiningDate) : new Date(),
+        endDate: emp.endDate ? new Date(emp.endDate) : null,
+        employmentType: emp.employmentType || 'full-time',
+        salary: emp.salary || 0,
+        badge: 'Basic',
+        education: {
+          degree: emp.education?.degree || '',
+          institution: emp.education?.institution || '',
+          fieldOfStudy: emp.education?.fieldOfStudy || '',
+          grade: emp.education?.grade || '',
+          startDate: emp.education?.startDate || '',
+          endDate: emp.education?.endDate || '',
+          certificate: processedDocuments.educationCertificate?.[0] || null
+        },
+        certificates: parsedFormData.certificates?.map((cert, index) => ({
+          name: cert.name || '',
+          institution: cert.institution || '',
+          issueDate: cert.issueDate || '',
+          expiryDate: cert.expiryDate || '',
+          file: processedDocuments.certificates?.[index] || null
+        })) || [],
+        experience: 0,
+        jobHistory: [],
+        password: parsedFormData.password, // Use the password from the generated field
+        company: req.user?.company // Set company from authenticated employer
       };
     } else if (userType === 'company') {
       const comp = parsedFormData.company;
@@ -1018,16 +1091,18 @@ router.post('/register', upload.fields([
 
     // Create audit log
     await AuditLog.create({
-      action: 'user_registration',
+      action: userType === 'employer_employee' ? 'employee_create' : 'user_registration',
       resource: {
         type: 'user',
         id: user._id,
         name: `${user.firstName} ${user.lastName}`
       },
       details: {
-        description: `New ${userType} registration: ${user.firstName} ${user.lastName}`,
-        category: 'registration',
-        severity: 'low',
+        description: userType === 'employer_employee' 
+          ? `Employer created new employee: ${user.firstName} ${user.lastName}`
+          : `New ${userType} registration: ${user.firstName} ${user.lastName}`,
+        category: userType === 'employer_employee' ? 'data_modification' : 'registration',
+        severity: userType === 'employer_employee' ? 'medium' : 'low',
         ipAddress: req.ip,
         userAgent: req.get('User-Agent')
       }
@@ -1036,8 +1111,10 @@ router.post('/register', upload.fields([
     sendSuccessResponse(res, {
       userId: user._id,
       status: user.status,
-      message: 'Registration submitted successfully'
-    }, 'Registration submitted successfully. We will review your information and contact you soon.', 201);
+      message: userType === 'employer_employee' ? 'Employee created successfully' : 'Registration submitted successfully'
+    }, userType === 'employer_employee' 
+      ? 'Employee created successfully' 
+      : 'Registration submitted successfully. We will review your information and contact you soon.', 201);
 
   } catch (error) {
     // Clean up uploaded files if registration fails

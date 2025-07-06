@@ -15,19 +15,15 @@ const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Fetch unread count on mount and set up polling
+  // Fetch unread count on mount only once
   useEffect(() => {
-    fetchUnreadCount();
-    
-    // Temporarily disable polling to test continuous reloading
-    // const pollInterval = process.env.NODE_ENV === 'development' ? 120000 : 60000; // 2 min in dev, 1 min in prod
-    // const interval = setInterval(() => {
-    //   fetchUnreadCount();
-    // }, pollInterval);
-
-    // return () => clearInterval(interval);
-  }, []);
+    if (!hasInitialized) {
+      fetchUnreadCount();
+      setHasInitialized(true);
+    }
+  }, [hasInitialized]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -38,6 +34,7 @@ const NotificationProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching unread count:', error);
       // Don't update state on error to prevent re-renders
+      // Don't throw error to prevent infinite loops
     }
   };
 
@@ -49,7 +46,8 @@ const NotificationProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      throw error;
+      // Don't throw error to prevent infinite loops
+      return { notifications: [] };
     } finally {
       setLoading(false);
     }
@@ -65,10 +63,11 @@ const NotificationProvider = ({ children }) => {
             : notif
         )
       );
-      fetchUnreadCount();
+      // Update unread count locally instead of making another API call
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      throw error;
+      // Don't throw error to prevent infinite loops
     }
   };
 
@@ -79,10 +78,11 @@ const NotificationProvider = ({ children }) => {
       setNotifications(prev => 
         prev.map(notif => ({ ...notif, read: true, readAt: new Date() }))
       );
-      fetchUnreadCount();
+      // Update unread count locally instead of making another API call
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      throw error;
+      // Don't throw error to prevent infinite loops
     }
   };
 
@@ -90,10 +90,14 @@ const NotificationProvider = ({ children }) => {
     try {
       await api.delete(`/api/notifications/${notificationId}`);
       setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
-      fetchUnreadCount();
+      // Update unread count locally if needed
+      setUnreadCount(prev => {
+        const deletedNotification = notifications.find(n => n._id === notificationId);
+        return deletedNotification && !deletedNotification.read ? Math.max(0, prev - 1) : prev;
+      });
     } catch (error) {
       console.error('Error deleting notification:', error);
-      throw error;
+      // Don't throw error to prevent infinite loops
     }
   };
 
@@ -104,7 +108,7 @@ const NotificationProvider = ({ children }) => {
       fetchNotifications();
     } catch (error) {
       console.error('Error clearing read notifications:', error);
-      throw error;
+      // Don't throw error to prevent infinite loops
     }
   };
 

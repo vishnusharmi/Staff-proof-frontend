@@ -7,6 +7,9 @@ const api = axios.create({
   withCredentials: true
 });
 
+// Flag to prevent infinite redirects
+let isRedirecting = false;
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
@@ -27,11 +30,21 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isRedirecting) {
       // Token expired or invalid
+      isRedirecting = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      
+      // Only redirect if we're not already on the login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      
+      // Reset flag after a delay
+      setTimeout(() => {
+        isRedirecting = false;
+      }, 1000);
     }
     return Promise.reject(error);
   }

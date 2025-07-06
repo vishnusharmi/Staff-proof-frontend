@@ -393,7 +393,106 @@ export const fetchEmployee = async (id) => {
 };
 
 export const createEmployee = async (employeeData) => {
-  const res = await api.post('/api/employees/employees', employeeData, { 
+  // Add userType to the FormData
+  employeeData.append('userType', 'employer_employee');
+  
+  // Convert FormData to the expected flat structure
+  const formData = {
+    employee: {
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      fatherName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: '',
+      gender: '',
+      designation: '',
+      department: '',
+      joiningDate: '',
+      endDate: '',
+      employmentType: '',
+      salary: 0,
+      education: {
+        degree: '',
+        institution: '',
+        fieldOfStudy: '',
+        grade: '',
+        startDate: '',
+        endDate: ''
+      }
+    },
+    certificates: [],
+    password: ''
+  };
+  
+  // Extract data from FormData and structure it properly
+  for (let [key, value] of employeeData.entries()) {
+    if (key.startsWith('education[')) {
+      // Handle education fields
+      const fieldName = key.replace('education[', '').replace(']', '');
+      formData.employee.education[fieldName] = value;
+    } else if (key === 'firstName') {
+      formData.employee.firstName = value;
+    } else if (key === 'lastName') {
+      formData.employee.lastName = value;
+    } else if (key === 'middleName') {
+      formData.employee.middleName = value;
+    } else if (key === 'fatherName') {
+      formData.employee.fatherName = value;
+    } else if (key === 'email') {
+      formData.employee.email = value;
+    } else if (key === 'phone') {
+      formData.employee.phone = value;
+    } else if (key === 'dateOfBirth') {
+      formData.employee.dateOfBirth = value;
+    } else if (key === 'gender') {
+      formData.employee.gender = value;
+    } else if (key === 'designation') {
+      formData.employee.designation = value;
+    } else if (key === 'department') {
+      formData.employee.department = value;
+    } else if (key === 'joiningDate') {
+      formData.employee.joiningDate = value;
+    } else if (key === 'endDate') {
+      formData.employee.endDate = value;
+    } else if (key === 'employmentType') {
+      formData.employee.employmentType = value;
+    } else if (key === 'salary') {
+      formData.employee.salary = parseFloat(value) || 0;
+    } else if (key === 'password') {
+      // Store password separately for employer_employee type
+      formData.password = value;
+    } else if (key === 'address') {
+      // Handle address field - store it in the userData structure
+      formData.address = value;
+    } else if (key.startsWith('certificates[')) {
+      // Handle certificates fields
+      const match = key.match(/certificates\[(\d+)\]\[(\w+)\]/);
+      if (match) {
+        const index = parseInt(match[1]);
+        const field = match[2];
+        
+        // Ensure the array has enough elements
+        while (formData.certificates.length <= index) {
+          formData.certificates.push({
+            name: '',
+            institution: '',
+            issueDate: '',
+            expiryDate: '',
+            file: null
+          });
+        }
+        
+        formData.certificates[index][field] = value;
+      }
+    }
+  }
+  
+  // Add the formData as JSON string
+  employeeData.set('formData', JSON.stringify(formData));
+  
+  const res = await api.post('/api/users/register', employeeData, { 
     withCredentials: true,
     headers: {
       'Content-Type': 'multipart/form-data'

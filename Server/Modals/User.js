@@ -192,6 +192,35 @@ const userSchema = new mongoose.Schema({
       }
     }
   },
+  certificates: [{
+    name: {
+      type: String,
+      trim: true,
+      required: true
+    },
+    institution: {
+      type: String,
+      trim: true,
+      required: true
+    },
+    issueDate: {
+      type: Date
+    },
+    expiryDate: {
+      type: Date
+    },
+    file: {
+      filename: String,
+      originalName: String,
+      mimetype: String,
+      size: Number,
+      url: String,
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  }],
   jobHistory: [{
     companyName: {
       type: String,
