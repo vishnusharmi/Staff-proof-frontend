@@ -1,16 +1,6 @@
 const mongoose = require('mongoose');
 
 const verificationCaseSchema = new mongoose.Schema({
-  // Case Information
-  caseId: {
-    type: String,
-    unique: true,
-    required: true,
-    default: function() {
-      return 'SP_' + Date.now().toString().slice(-6) + Math.random().toString(36).substr(2, 4).toUpperCase();
-    }
-  },
-  
   // Employee Information
   employee: {
     type: mongoose.Schema.Types.ObjectId,
@@ -18,35 +8,64 @@ const verificationCaseSchema = new mongoose.Schema({
     required: true
   },
   
-  // Company Information
-  company: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Company',
+  // Case Information
+  caseType: {
+    type: String,
+    enum: ['profile_update', 'job_history', 'document_verification'],
     required: true
+  },
+  
+  // Profile Status
+  profileStatus: {
+    type: String,
+    enum: ['updated', 'pending', 'verified', 'rejected'],
+    default: 'updated'
+  },
+  
+  // Job History Status
+  jobHistoryStatus: {
+    type: String,
+    enum: ['pending', 'verified', 'rejected'],
+    default: 'pending'
+  },
+  
+  // Document Status
+  documentStatus: {
+    type: String,
+    enum: ['pending', 'verified', 'rejected'],
+    default: 'pending'
+  },
+  
+  // Overall Case Status
+  status: {
+    type: String,
+    enum: ['pending', 'assigned', 'in_progress', 'completed', 'rejected'],
+    default: 'pending'
   },
   
   // Assignment Information
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: function() {
-      return this.status !== 'pending';
-    }
+    ref: 'User'
   },
-  assignedDate: {
-    type: Date,
-    default: Date.now
+  assignedAt: {
+    type: Date
   },
-  dueDate: {
-    type: Date,
-    required: true
+  assignedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   
-  // Case Status
-  status: {
-    type: String,
-    enum: ['pending', 'assigned', 'in_progress', 'verified', 'flagged', 'rejected', 'completed'],
-    default: 'pending'
+  // Verification Details
+  verificationNotes: {
+    type: String
+  },
+  verificationDate: {
+    type: Date
+  },
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   
   // Priority
@@ -56,277 +75,218 @@ const verificationCaseSchema = new mongoose.Schema({
     default: 'medium'
   },
   
-  // Documents Required and Status
-  requiredDocuments: {
-    resume: {
-      isRequired: {
-        type: Boolean,
-        default: true
-      },
-      status: {
-        type: String,
-        enum: ['pending', 'submitted', 'verified', 'flagged', 'rejected'],
-        default: 'pending'
-      },
-      url: String,
-      uploadedAt: Date,
-      verifiedAt: Date,
-      verifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      notes: String
-    },
-    governmentId: {
-      isRequired: {
-        type: Boolean,
-        default: true
-      },
-      status: {
-        type: String,
-        enum: ['pending', 'submitted', 'verified', 'flagged', 'rejected'],
-        default: 'pending'
-      },
-      url: String,
-      uploadedAt: Date,
-      verifiedAt: Date,
-      verifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      notes: String
-    },
-    payslips: {
-      isRequired: {
-        type: Boolean,
-        default: true
-      },
-      status: {
-        type: String,
-        enum: ['pending', 'submitted', 'verified', 'flagged', 'rejected'],
-        default: 'pending'
-      },
-      url: String,
-      uploadedAt: Date,
-      verifiedAt: Date,
-      verifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      notes: String
-    },
-    experienceLetters: {
-      isRequired: {
-        type: Boolean,
-        default: true
-      },
-      status: {
-        type: String,
-        enum: ['pending', 'submitted', 'verified', 'flagged', 'rejected'],
-        default: 'pending'
-      },
-      url: String,
-      uploadedAt: Date,
-      verifiedAt: Date,
-      verifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      notes: String
-    },
-    educationalCertificates: {
-      isRequired: {
-        type: Boolean,
-        default: false
-      },
-      status: {
-        type: String,
-        enum: ['pending', 'submitted', 'verified', 'flagged', 'rejected'],
-        default: 'pending'
-      },
-      url: String,
-      uploadedAt: Date,
-      verifiedAt: Date,
-      verifiedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      notes: String
-    }
+  // Timestamps
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   },
   
-  // Verification Results
-  verificationResults: {
-    overallStatus: {
-      type: String,
-      enum: ['pending', 'verified', 'flagged', 'rejected'],
-      default: 'pending'
-    },
-    finalDecision: {
-      type: String,
-      enum: ['approved', 'rejected', 'needs_clarification'],
-      default: 'pending'
-    },
-    decisionDate: Date,
-    decisionBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    decisionNotes: String,
-    tags: [String]
-  },
-  
-  // Notes and Communication
-  notes: [{
-    content: {
-      type: String,
-      required: true
-    },
-    author: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    isInternal: {
-      type: Boolean,
-      default: false
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-  
-  // Activity Log
-  activityLog: [{
+  // Case History
+  history: [{
     action: {
       type: String,
       required: true
     },
-    description: String,
+    description: {
+      type: String
+    },
     performedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
-    timestamp: {
+    performedAt: {
       type: Date,
       default: Date.now
     },
-    metadata: mongoose.Schema.Types.Mixed
-  }],
-  
-  // Clarification Requests
-  clarificationRequests: [{
-    request: {
-      type: String,
-      required: true
+    previousStatus: {
+      type: String
     },
-    requestedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    requestedAt: {
-      type: Date,
-      default: Date.now
-    },
-    response: String,
-    respondedAt: Date,
-    status: {
-      type: String,
-      enum: ['pending', 'responded', 'closed'],
-      default: 'pending'
+    newStatus: {
+      type: String
     }
   }],
   
-  // Timestamps
-  startedAt: Date,
-  completedAt: Date,
-  lastUpdated: {
-    type: Date,
-    default: Date.now
-  }
+  // Document Verification Details
+  documentVerifications: [{
+    documentType: {
+      type: String,
+      enum: ['offerLetter', 'relievingLetter', 'payslips', 'bankStatements', 'resume', 'certificates', 'aadharCard', 'panCard'],
+      required: true
+    },
+    jobHistoryIndex: {
+      type: Number,
+      default: -1 // -1 for profile documents, >= 0 for job history documents
+    },
+    documentIndex: {
+      type: Number,
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending'
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    verifiedAt: {
+      type: Date
+    },
+    notes: {
+      type: String
+    }
+  }],
+  
+  // Job History Verification Details
+  jobHistoryVerifications: [{
+    jobHistoryIndex: {
+      type: Number,
+      required: true
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending'
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    verifiedAt: {
+      type: Date
+    },
+    notes: {
+      type: String
+    }
+  }]
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  timestamps: true
 });
 
-// Virtual for progress percentage
-verificationCaseSchema.virtual('progressPercentage').get(function() {
-  const documents = Object.values(this.requiredDocuments);
-  const submittedCount = documents.filter(doc => 
-    doc.status === 'submitted' || doc.status === 'verified' || doc.status === 'flagged'
-  ).length;
-  const totalRequired = documents.filter(doc => doc.isRequired).length;
-  return totalRequired > 0 ? Math.round((submittedCount / totalRequired) * 100) : 0;
-});
+// Indexes for better query performance
+verificationCaseSchema.index({ employee: 1, status: 1 });
+verificationCaseSchema.index({ assignedTo: 1, status: 1 });
+verificationCaseSchema.index({ createdAt: -1 });
+verificationCaseSchema.index({ priority: 1, status: 1 });
 
-// Virtual for is overdue
-verificationCaseSchema.virtual('isOverdue').get(function() {
-  return this.dueDate && new Date() > this.dueDate && this.status !== 'completed';
-});
-
-// Virtual for days remaining
-verificationCaseSchema.virtual('daysRemaining').get(function() {
-  if (!this.dueDate) return null;
-  const now = new Date();
-  const due = new Date(this.dueDate);
-  const diffTime = due - now;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
-});
-
-// Indexes
-verificationCaseSchema.index({ employee: 1 });
-verificationCaseSchema.index({ company: 1 });
-verificationCaseSchema.index({ assignedTo: 1 });
-verificationCaseSchema.index({ status: 1 });
-verificationCaseSchema.index({ priority: 1 });
-verificationCaseSchema.index({ dueDate: 1 });
-verificationCaseSchema.index({ 'verificationResults.overallStatus': 1 });
-
-// Pre-save middleware to update lastUpdated
+// Pre-save middleware to update updatedAt
 verificationCaseSchema.pre('save', function(next) {
-  this.lastUpdated = new Date();
+  this.updatedAt = new Date();
   next();
 });
 
-// Instance method to add activity log
-verificationCaseSchema.methods.addActivity = function(action, description, performedBy, metadata = {}) {
-  this.activityLog.push({
+// Method to add history entry
+verificationCaseSchema.methods.addHistoryEntry = function(action, description, performedBy, previousStatus = null, newStatus = null) {
+  this.history.push({
     action,
     description,
     performedBy,
-    metadata
+    previousStatus,
+    newStatus
   });
   return this.save();
 };
 
-// Instance method to add note
-verificationCaseSchema.methods.addNote = function(content, author, isInternal = false) {
-  this.notes.push({
-    content,
-    author,
-    isInternal
-  });
-  return this.save();
-};
-
-// Instance method to update document status
-verificationCaseSchema.methods.updateDocumentStatus = function(documentType, status, verifiedBy = null, notes = '') {
-  if (this.requiredDocuments[documentType]) {
-    this.requiredDocuments[documentType].status = status;
-    if (verifiedBy) {
-      this.requiredDocuments[documentType].verifiedBy = verifiedBy;
-      this.requiredDocuments[documentType].verifiedAt = new Date();
-    }
-    if (notes) {
-      this.requiredDocuments[documentType].notes = notes;
-    }
+// Method to update case status
+verificationCaseSchema.methods.updateStatus = function(newStatus, performedBy, notes = '') {
+  const previousStatus = this.status;
+  this.status = newStatus;
+  this.verificationNotes = notes;
+  
+  if (newStatus === 'completed' || newStatus === 'rejected') {
+    this.verificationDate = new Date();
+    this.verifiedBy = performedBy;
   }
-  return this.save();
+  
+  return this.addHistoryEntry(
+    'status_update',
+    `Case status changed from ${previousStatus} to ${newStatus}`,
+    performedBy,
+    previousStatus,
+    newStatus
+  );
+};
+
+// Method to assign case
+verificationCaseSchema.methods.assignCase = function(verifierId, assignedBy) {
+  this.assignedTo = verifierId;
+  this.assignedAt = new Date();
+  this.assignedBy = assignedBy;
+  this.status = 'assigned';
+  
+  return this.addHistoryEntry(
+    'case_assigned',
+    'Case assigned to verifier',
+    assignedBy,
+    'pending',
+    'assigned'
+  );
+};
+
+// Method to update document verification status
+verificationCaseSchema.methods.updateDocumentVerification = function(documentType, jobHistoryIndex, documentIndex, status, verifiedBy, notes = '') {
+  const existingVerification = this.documentVerifications.find(
+    v => v.documentType === documentType && 
+         v.jobHistoryIndex === jobHistoryIndex && 
+         v.documentIndex === documentIndex
+  );
+  
+  if (existingVerification) {
+    existingVerification.status = status;
+    existingVerification.verifiedBy = verifiedBy;
+    existingVerification.verifiedAt = new Date();
+    existingVerification.notes = notes;
+  } else {
+    this.documentVerifications.push({
+      documentType,
+      jobHistoryIndex,
+      documentIndex,
+      status,
+      verifiedBy,
+      verifiedAt: new Date(),
+      notes
+    });
+  }
+  
+  return this.addHistoryEntry(
+    'document_verification',
+    `Document ${documentType} ${status}`,
+    verifiedBy
+  );
+};
+
+// Method to update job history verification status
+verificationCaseSchema.methods.updateJobHistoryVerification = function(jobHistoryIndex, status, verifiedBy, notes = '') {
+  const existingVerification = this.jobHistoryVerifications.find(
+    v => v.jobHistoryIndex === jobHistoryIndex
+  );
+  
+  if (existingVerification) {
+    existingVerification.status = status;
+    existingVerification.verifiedBy = verifiedBy;
+    existingVerification.verifiedAt = new Date();
+    existingVerification.notes = notes;
+  } else {
+    this.jobHistoryVerifications.push({
+      jobHistoryIndex,
+      status,
+      verifiedBy,
+      verifiedAt: new Date(),
+      notes
+    });
+  }
+  
+  return this.addHistoryEntry(
+    'job_history_verification',
+    `Job history ${jobHistoryIndex} ${status}`,
+    verifiedBy
+  );
 };
 
 module.exports = mongoose.model('VerificationCase', verificationCaseSchema); 

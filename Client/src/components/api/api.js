@@ -238,7 +238,7 @@ export const fetchVerifications = async (params = {}) => {
 };
 
 export const fetchVerificationCase = async (id) => {
-  const res = await api.get(`/api/verifications/${id}`, { withCredentials: true });
+  const res = await api.get(`/api/verifications/cases/${id}`, { withCredentials: true });
   return res.data;
 };
 
@@ -248,7 +248,23 @@ export const createVerification = async (verificationData) => {
 };
 
 export const updateCaseStatus = async (id, statusData) => {
-  const res = await api.put(`/api/verifications/${id}/status`, statusData, { withCredentials: true });
+  const res = await api.put(`/api/verifications/cases/${id}/status`, statusData, { withCredentials: true });
+  return res.data;
+};
+
+export const updateDocumentVerification = async (caseId, documentType, jobHistoryIndex, documentIndex, status, notes) => {
+  const res = await api.put(`/api/verifications/cases/${caseId}/document/${documentType}/${jobHistoryIndex}/${documentIndex}`, {
+    status,
+    notes
+  }, { withCredentials: true });
+  return res.data;
+};
+
+export const updateJobHistoryVerification = async (caseId, jobHistoryIndex, status, notes) => {
+  const res = await api.put(`/api/verifications/cases/${caseId}/job-history/${jobHistoryIndex}`, {
+    status,
+    notes
+  }, { withCredentials: true });
   return res.data;
 };
 
@@ -561,15 +577,15 @@ export const updateEmployerKYC = async (id, kycData) => {
 
 // CASE ASSIGNMENT FUNCTIONS
 export const fetchCaseAssignments = async (params = {}) => {
-  const res = await api.get('/api/case-assignments', {
+  const res = await api.get('/api/verifications/cases', { 
     params,
-    withCredentials: true
+    withCredentials: true 
   });
   return res.data;
 };
 
 export const assignCase = async (caseId, assignData) => {
-  const res = await api.post(`/api/case-assignments/${caseId}/assign`, assignData, { withCredentials: true });
+  const res = await api.post(`/api/verifications/cases/${caseId}/assign`, assignData, { withCredentials: true });
   return res.data;
 };
 

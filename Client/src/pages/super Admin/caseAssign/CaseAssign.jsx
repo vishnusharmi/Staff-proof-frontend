@@ -132,10 +132,14 @@ const CaseAssign = () => {
 
   const stats = {
     totalCases: cases.length,
-    unassigned: cases.filter((c) => c.status === "unassigned").length,
+    unassigned: cases.filter((c) => c.status === "pending").length,
     assigned: cases.filter((c) => c.status === "assigned").length,
-    inVerification: cases.filter((c) => c.status === "in_verification").length,
+    inVerification: cases.filter((c) => c.status === "in_progress").length,
     highPriority: cases.filter((c) => c.priority === "high").length,
+    updatedProfiles: cases.filter((c) => c.profileStatus === "updated").length,
+    profileUpdates: cases.filter((c) => c.caseType === "profile_update").length,
+    jobHistoryUpdates: cases.filter((c) => c.caseType === "job_history").length,
+    documentUpdates: cases.filter((c) => c.caseType === "document_verification").length,
   };
 
   const getStatusColor = (status) => {
@@ -184,11 +188,19 @@ const CaseAssign = () => {
   const filteredCases = useMemo(() => {
     return cases.filter((caseItem) => {
       const matchesSearch =
-        caseItem.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.id.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        filterStatus === "all" || caseItem.status === filterStatus;
+        caseItem.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        caseItem.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        caseItem.id?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      let matchesStatus = true;
+      if (filterStatus === "updated") {
+        matchesStatus = caseItem.profileStatus === "updated";
+      } else if (filterStatus === "pending") {
+        matchesStatus = caseItem.profileStatus === "pending";
+      } else if (filterStatus !== "all") {
+        matchesStatus = caseItem.status === filterStatus;
+      }
+      
       const matchesType =
         filterUserType === "all" || caseItem.type === filterUserType;
       const matchesPriority =
@@ -271,7 +283,7 @@ const CaseAssign = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
           <div className="bg-white p-6 rounded-lg shadow border">
             <div className="flex items-center justify-between">
               <div>
@@ -281,6 +293,17 @@ const CaseAssign = () => {
                 </p>
               </div>
               <FileText className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Updated Profiles</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {stats.updatedProfiles}
+                </p>
+              </div>
+              <UserCheck className="w-8 h-8 text-blue-600" />
             </div>
           </div>
           <div className="bg-white p-6 rounded-lg shadow border">
@@ -400,6 +423,8 @@ const CaseAssign = () => {
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="all">All Status</option>
+                <option value="updated">Updated Profiles</option>
+                <option value="pending">Pending</option>
                 <option value="unassigned">Unassigned</option>
                 <option value="assigned">Assigned</option>
                 <option value="in_verification">In Verification</option>
@@ -527,6 +552,12 @@ const CaseAssign = () => {
                     Case Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Case Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Profile Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Priority
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -548,7 +579,9 @@ const CaseAssign = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedCases.map((caseItem) => (
-                  <tr key={caseItem.id} className="hover:bg-gray-50">
+                  <tr key={caseItem.id} className={`hover:bg-gray-50 ${
+                    caseItem.profileStatus === 'updated' ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                  }`}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
@@ -579,6 +612,21 @@ const CaseAssign = () => {
                           </div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                        {caseItem.caseType?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      caseItem.profileStatus === 'verified' ? 'bg-green-100 text-green-800' :
+                      caseItem.profileStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                      caseItem.profileStatus === 'updated' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {caseItem.profileStatus?.toUpperCase() || 'UPDATED'}
+                    </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span

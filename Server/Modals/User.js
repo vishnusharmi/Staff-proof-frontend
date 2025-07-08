@@ -239,10 +239,135 @@ const userSchema = new mongoose.Schema({
     location: {
       type: String,
       trim: true
+    },
+    currentlyWorking: {
+      type: Boolean,
+      default: false
+    },
+    // Job History Verification Status
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending'
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    verifiedAt: {
+      type: Date
+    },
+    verificationNotes: {
+      type: String
+    },
+    // Job History Documents
+    documents: {
+      offerLetter: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }],
+      relievingLetter: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }],
+      payslips: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }],
+      bankStatements: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }]
     }
   }],
-  
-
   
   // File Uploads
   documents: {
@@ -255,6 +380,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     certificates: [{
@@ -266,6 +406,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     governmentID: [{
@@ -277,6 +432,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     registration: [{
@@ -288,6 +458,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     gstCertificate: [{
@@ -299,6 +484,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     signatoryID: [{
@@ -310,6 +510,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     logo: [{
@@ -321,6 +536,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     aadharCard: [{
@@ -332,6 +562,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     panCard: [{
@@ -343,6 +588,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }],
     offerLetter: [{
@@ -354,6 +614,21 @@ const userSchema = new mongoose.Schema({
       uploadedAt: {
         type: Date,
         default: Date.now
+      },
+      verificationStatus: {
+        type: String,
+        enum: ['pending', 'verified', 'rejected'],
+        default: 'pending'
+      },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: {
+        type: Date
+      },
+      verificationNotes: {
+        type: String
       }
     }]
   },
@@ -370,6 +645,173 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  
+  // Profile Verification Status
+  profileStatus: {
+    type: String,
+    enum: ['updated', 'pending', 'verified', 'rejected'],
+    default: 'updated'
+  },
+  profileStatusUpdatedAt: {
+    type: Date,
+    default: Date.now
+  },
+  profileStatusUpdatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  profileStatusNotes: {
+    type: String
+  },
+  
+  // Job History Verification
+  jobHistory: [{
+    companyName: {
+      type: String,
+      trim: true
+    },
+    designation: {
+      type: String,
+      trim: true
+    },
+    startDate: {
+      type: Date
+    },
+    endDate: {
+      type: Date
+    },
+    location: {
+      type: String,
+      trim: true
+    },
+    currentlyWorking: {
+      type: Boolean,
+      default: false
+    },
+    // Job History Verification Status
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending'
+    },
+    verifiedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    verifiedAt: {
+      type: Date
+    },
+    verificationNotes: {
+      type: String
+    },
+    // Job History Documents
+    documents: {
+      offerLetter: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }],
+      relievingLetter: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }],
+      payslips: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }],
+      bankStatements: [{
+        filename: String,
+        originalName: String,
+        mimetype: String,
+        size: Number,
+        url: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        verifiedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User'
+        },
+        verifiedAt: {
+          type: Date
+        },
+        verificationNotes: {
+          type: String
+        }
+      }]
+    }
+  }],
   
   // KYC Status (for Employers)
   kycStatus: {

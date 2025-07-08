@@ -342,7 +342,35 @@ router.put('/profile', authenticateToken, validateProfileUpdate, asyncHandler(as
     }
   });
   
+  // Check if profile is being updated and set status to updated
+  if (req.body.profileUpdated === 'true') {
+    req.user.profileStatus = 'updated';
+    req.user.profileStatusUpdatedAt = new Date();
+  }
+  
   await req.user.save();
+  
+  // Create verification case if profile was updated
+  if (req.body.profileUpdated === 'true') {
+    const VerificationCase = require('../Modals/VerificationCase');
+    
+    // Check if verification case already exists
+    let verificationCase = await VerificationCase.findOne({
+      employee: req.user._id,
+      caseType: 'profile_update',
+      status: { $in: ['pending', 'assigned', 'in_progress'] }
+    });
+    
+    if (!verificationCase) {
+      verificationCase = await VerificationCase.create({
+        employee: req.user._id,
+        caseType: 'profile_update',
+        profileStatus: 'updated',
+        status: 'pending',
+        priority: 'medium'
+      });
+    }
+  }
   
   // Create audit log
   await AuditLog.create({
@@ -581,19 +609,81 @@ router.get('/job-history', authenticateToken, asyncHandler(async (req, res) => {
 // @desc    Add a job history record
 // @access  Private (Employee)
 router.post('/job-history', authenticateToken, asyncHandler(async (req, res) => {
-  const { company, position, startDate, endDate, description } = req.body;
+  const { companyName, designation, startDate, endDate, location, currentlyWorking, documents } = req.body;
   const user = await User.findById(req.user._id);
   if (!user) return sendErrorResponse(res, 404, 'User not found');
+  
   const newRecord = {
-    _id: new mongoose.Types.ObjectId(),
-    company,
-    position,
-    startDate,
-    endDate,
-    description
+    companyName,
+    designation,
+    startDate: new Date(startDate),
+    endDate: currentlyWorking ? null : new Date(endDate),
+    location,
+    currentlyWorking: currentlyWorking || false,
+    verificationStatus: 'pending',
+    documents: {
+      offerLetter: [],
+      relievingLetter: [],
+      payslips: [],
+      bankStatements: []
+    }
   };
+  
+  // Add documents if provided
+  if (documents) {
+    if (documents.offerLetter) {
+      newRecord.documents.offerLetter.push({
+        filename: documents.offerLetter.name,
+        originalName: documents.offerLetter.name,
+        mimetype: documents.offerLetter.type,
+        size: documents.offerLetter.size,
+        url: documents.offerLetter.url,
+        verificationStatus: 'pending'
+      });
+    }
+    if (documents.relievingLetter) {
+      newRecord.documents.relievingLetter.push({
+        filename: documents.relievingLetter.name,
+        originalName: documents.relievingLetter.name,
+        mimetype: documents.relievingLetter.type,
+        size: documents.relievingLetter.size,
+        url: documents.relievingLetter.url,
+        verificationStatus: 'pending'
+      });
+    }
+    if (documents.payslips) {
+      newRecord.documents.payslips.push({
+        filename: documents.payslips.name,
+        originalName: documents.payslips.name,
+        mimetype: documents.payslips.type,
+        size: documents.payslips.size,
+        url: documents.payslips.url,
+        verificationStatus: 'pending'
+      });
+    }
+  }
+  
   user.jobHistory.push(newRecord);
   await user.save();
+  
+  // Create verification case for job history
+  const VerificationCase = require('../Modals/VerificationCase');
+  let verificationCase = await VerificationCase.findOne({
+    employee: req.user._id,
+    caseType: 'job_history',
+    status: { $in: ['pending', 'assigned', 'in_progress'] }
+  });
+  
+  if (!verificationCase) {
+    verificationCase = await VerificationCase.create({
+      employee: req.user._id,
+      caseType: 'job_history',
+      jobHistoryStatus: 'pending',
+      status: 'pending',
+      priority: 'medium'
+    });
+  }
+  
   return sendSuccessResponse(res, 201, 'Job record added', { data: newRecord });
 }));
 
@@ -628,6 +718,10 @@ router.post('/documents/upload', authenticateToken, memoryUpload.single('file'),
   if (!req.file) return sendErrorResponse(res, 400, 'No file uploaded');
   const user = await User.findById(req.user._id);
   if (!user) return sendErrorResponse(res, 404, 'User not found');
+  
+  const { type } = req.body;
+  if (!type) return sendErrorResponse(res, 400, 'Document type is required');
+  
   // Store in S3 if available, else in MongoDB
   let fileUrl = null;
   let s3Key = null;
@@ -636,18 +730,46 @@ router.post('/documents/upload', authenticateToken, memoryUpload.single('file'),
     fileUrl = s3Result.Location;
     s3Key = s3Result.Key;
   }
+  
   const newDoc = {
-    _id: new mongoose.Types.ObjectId(),
-    name: req.file.originalname,
+    filename: req.file.originalname,
+    originalName: req.file.originalname,
     mimetype: req.file.mimetype,
     size: req.file.size,
-    uploadedAt: new Date(),
     url: fileUrl,
     s3Key,
+    uploadedAt: new Date(),
+    verificationStatus: 'pending',
     data: !fileUrl ? req.file.buffer.toString('base64') : undefined
   };
-  user.documents.push(newDoc);
+  
+  // Add document to the appropriate category
+  if (!user.documents[type]) {
+    user.documents[type] = [];
+  }
+  user.documents[type].push(newDoc);
   await user.save();
+  
+  // Create verification case for document verification
+  if (req.body.documentUpdated === 'true') {
+    const VerificationCase = require('../Modals/VerificationCase');
+    let verificationCase = await VerificationCase.findOne({
+      employee: req.user._id,
+      caseType: 'document_verification',
+      status: { $in: ['pending', 'assigned', 'in_progress'] }
+    });
+    
+    if (!verificationCase) {
+      verificationCase = await VerificationCase.create({
+        employee: req.user._id,
+        caseType: 'document_verification',
+        documentStatus: 'pending',
+        status: 'pending',
+        priority: 'medium'
+      });
+    }
+  }
+  
   return sendSuccessResponse(res, 201, 'Document uploaded', { data: newDoc });
 }));
 

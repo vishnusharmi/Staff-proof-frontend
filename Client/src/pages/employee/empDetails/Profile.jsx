@@ -140,6 +140,7 @@ const Profile = ({ hasEditAccess = true }) => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', docType);
+      formData.append('documentUpdated', 'true');
       
       const result = await uploadDocument(formData);
       setProfileData(prev => ({
@@ -149,6 +150,9 @@ const Profile = ({ hasEditAccess = true }) => {
           [docType]: result
         }
       }));
+      
+      // Show success message
+      alert('Document uploaded successfully! Your document is now pending verification.');
     } catch (err) {
       console.error('Error uploading document:', err);
       setError(err.response?.data?.message || 'Failed to upload document');
@@ -184,6 +188,9 @@ const Profile = ({ hasEditAccess = true }) => {
         relievingLetter: null,
         payslips: null
       });
+      
+      // Show success message
+      alert('Job history added successfully! Your job history is now pending verification.');
     } catch (err) {
       console.error('Error adding job record:', err);
       setError(err.response?.data?.message || 'Failed to add job record');
@@ -208,10 +215,16 @@ const Profile = ({ hasEditAccess = true }) => {
         formData.append('profileImage', selectedFile);
       }
       
+      // Add profile status update flag
+      formData.append('profileUpdated', 'true');
+      
       const result = await updateProfile(formData);
       setProfileData(result);
       setEditMode(false);
       setSelectedFile(null);
+      
+      // Show success message
+      alert('Profile updated successfully! Your profile has been marked as updated and is awaiting verification.');
     } catch (err) {
       console.error('Error updating profile:', err);
       setError(err.response?.data?.message || 'Failed to update profile');

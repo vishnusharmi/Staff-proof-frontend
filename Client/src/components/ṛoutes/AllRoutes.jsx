@@ -18,6 +18,7 @@ import AuditLogs from "../../pages/super Admin/auditLogs Management/AuditLogs";
 import VerifierDashboard from "../../pages/verifier/vfrDashBoard/VerifierDashboard";
 import EmployeesCaseDetails from "../../pages/verifier/employees/EmployeesCaseDetails";
 import CaseView from "../../pages/verifier/employees/CaseView";
+import EmployeeVerification from "../../pages/verifier/employees/EmployeeVerification";
 import CompaniesCaseDetails from "../../pages/verifier/companies/CompaniesCaseDetails";
 import CompanyCaseView from "../../pages/verifier/companies/CompanyCaseView";
 import Notes from "../../pages/verifier/notes/Notes";
@@ -94,6 +95,7 @@ function AllRoutes() {
         <Route index element={<VerifierDashboard />} />
         <Route path="employees" element={<EmployeesCaseDetails />} />
         <Route path="view" element={<CaseView />} />
+        <Route path="verification/:caseId" element={<EmployeeVerification />} />
         <Route path="companies" element={<CompaniesCaseDetails />} />
         <Route path="companyCase" element={<CompanyCaseView />} />
         <Route path="notes" element={<Notes />} />
