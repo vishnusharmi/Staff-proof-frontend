@@ -141,6 +141,7 @@ Server/.env.production
 Server/.env.production.local
 Server/.env.staging
 Server/.env.staging.local
+Server/config.env
 
 # IDE and Editor files
 .vscode/
